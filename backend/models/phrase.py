@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.database import Base
+from backend.models.category import phrase_categories
 
 
 class Phrase(Base):
@@ -17,3 +18,7 @@ class Phrase(Base):
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )
     times_sent: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+
+    categories: Mapped[list["Category"]] = relationship(  # noqa: F821
+        secondary=phrase_categories, back_populates="phrases", lazy="selectin"
+    )

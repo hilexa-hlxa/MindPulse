@@ -1,0 +1,26 @@
+meta {
+  name: Update Phrase
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/phrases/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+body:json {
+  {
+    "is_active": false
+  }
+}
+
+docs {
+  Only fields present in the body change. Sending `categories` REPLACES
+  the full tag set rather than merging.
+}

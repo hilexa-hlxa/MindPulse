@@ -1,0 +1,25 @@
+meta {
+  name: Update Settings
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/api/settings
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "interval_minutes": 30,
+    "is_running": true,
+    "category_filter": ["discipline"]
+  }
+}
+
+docs {
+  Every field is optional — only what's present changes. `category_filter`
+  REPLACES the active filter; send `[]` to clear it (send from all phrases).
+  Applies to the live scheduler immediately, no restart needed.
+}

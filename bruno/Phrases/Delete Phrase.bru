@@ -1,0 +1,19 @@
+meta {
+  name: Delete Phrase
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/api/phrases/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  Hard delete, no undo. Cascade-deletes that phrase's delivery_log rows.
+}

@@ -22,10 +22,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install ruff
+          pip install -r requirements-dev.txt
 
       - name: Lint (ruff)
         run: ruff check .
 
-      - name: Run tests
+      - name: Run fast test suite
         run: pytest backend/tests -v
+
+      - name: Install Playwright's Chromium
+        run: playwright install --with-deps chromium
+
+      - name: Run E2E test
+        run: pytest backend/tests/test_e2e.py -m e2e -v

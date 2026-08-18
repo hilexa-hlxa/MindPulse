@@ -7,18 +7,17 @@ network calls to the push service — AsyncIOScheduler runs jobs on the
 same asyncio event loop FastAPI/uvicorn already has running, so an
 `async def` job can be awaited directly instead of needing a thread.
 """
-import logging
 from datetime import UTC, datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from sqlalchemy import func, select
 
 from backend.database import AsyncSessionLocal
-from backend.models.phrase import Phrase
+from backend.logging_config import get_logger
+from backend.services.phrase_repo import pick_random_active_phrase
 from backend.services.push import send_to_all
 from backend.services.settings_repo import get_or_create_settings
 
-logger = logging.getLogger("mindpulse.scheduler")
+logger = get_logger("mindpulse.scheduler")
 
 JOB_ID = "notification_job"
 
@@ -26,33 +25,41 @@ scheduler = AsyncIOScheduler()
 
 
 async def send_random_notification() -> dict:
-    """Core delivery job (spec 6.2):
+    """Core delivery job (spec 6.2, extended with category filtering):
 
-    1. Query one random active phrase.
+    1. Query one random active phrase, restricted to the settings'
+       active category filter if one is set.
     2. Fetch all active push subscriptions.
-    3. Send a Web Push payload to each via pywebpush.
+    3. Send a Web Push payload to each via pywebpush, with retry.
     4. Deactivate any subscription the push service reports as gone.
     5. Increment times_sent on the phrase.
     6. Update app_settings.last_sent_at.
     """
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(Phrase).where(Phrase.is_active.is_(True)).order_by(func.random()).limit(1)
-        )
-        phrase = result.scalar_one_or_none()
+        app_settings = await get_or_create_settings(db)
+        category_names = [c.name for c in app_settings.active_categories]
+
+        phrase = await pick_random_active_phrase(db)
         if phrase is None:
-            logger.info("No active phrases — skipping notification cycle.")
+            logger.info("notification_skipped", reason="no_active_phrases", category_filter=category_names)
             return {"sent": False, "reason": "no active phrases"}
 
         payload = {"title": "MindPulse", "body": phrase.text, "author": phrase.author}
-        push_result = await send_to_all(db, payload)
+        push_result = await send_to_all(db, phrase.id, payload)
 
         phrase.times_sent += 1
-        app_settings = await get_or_create_settings(db)
         app_settings.last_sent_at = datetime.now(UTC)
         await db.commit()
 
-        logger.info("Sent phrase #%s to %s subscriber(s).", phrase.id, push_result["delivered"])
+        logger.info(
+            "notification_sent",
+            phrase_id=phrase.id,
+            subscriber_count=push_result["total_subscriptions"],
+            delivered=push_result["delivered"],
+            expired=push_result["expired"],
+            failed=push_result["failed"],
+            category_filter=category_names,
+        )
         return {"sent": True, "phrase_id": phrase.id, **push_result}
 
 

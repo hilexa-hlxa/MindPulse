@@ -9,14 +9,18 @@ from backend.schemas.subscription import SubscriptionCreate, SubscriptionDelete,
 router = APIRouter(prefix="/api/subscriptions", tags=["subscriptions"])
 
 
-@router.post("", response_model=SubscriptionOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=SubscriptionOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a browser push subscription",
+    description=(
+        "Body mirrors `PushSubscription.toJSON()` from the browser's Push API. Idempotent: "
+        "re-subscribing with an endpoint that's already registered reactivates/updates that row "
+        "(e.g. after the browser rotates keys) instead of erroring on the UNIQUE constraint."
+    ),
+)
 async def create_subscription(payload: SubscriptionCreate, db: AsyncSession = Depends(get_db)):
-    """Register a browser push subscription.
-
-    Idempotent: re-subscribing with the same endpoint (e.g. after the
-    browser rotates keys, or the tab reloads) reactivates/updates the
-    existing row instead of violating the UNIQUE constraint on endpoint.
-    """
     result = await db.execute(
         select(PushSubscription).where(PushSubscription.endpoint == payload.endpoint)
     )
@@ -40,10 +44,13 @@ async def create_subscription(payload: SubscriptionCreate, db: AsyncSession = De
     return subscription
 
 
-@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Unregister a push subscription",
+    description="Unknown endpoints still return 204 — 'not subscribed' already holds, so it's a no-op, not an error.",
+)
 async def delete_subscription(payload: SubscriptionDelete, db: AsyncSession = Depends(get_db)):
-    """Unregister a subscription by endpoint. No-op (still 204) if unknown,
-    since the end state the client wants — 'not subscribed' — already holds."""
     result = await db.execute(
         select(PushSubscription).where(PushSubscription.endpoint == payload.endpoint)
     )

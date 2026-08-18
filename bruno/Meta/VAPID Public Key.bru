@@ -1,0 +1,15 @@
+meta {
+  name: VAPID Public Key
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/vapid-public-key
+  body: none
+  auth: none
+}
+
+docs {
+  The frontend fetches this instead of hardcoding the key in app.js.
+}

@@ -14,6 +14,7 @@ REST API design.
 
 ![Dashboard](docs/screenshot-dashboard.jpg)
 ![Phrases list](docs/screenshot-phrases.jpg)
+![Swagger UI](docs/screenshot-swagger.jpg)
 
 ## Features
 
@@ -22,17 +23,29 @@ REST API design.
 - ⏱️ Configurable delivery interval (15 min – 4 h), reschedules live, no
   server restart needed
 - ✍️ Add, edit, toggle, and delete your own motivational phrases
+- 🏷️ Tag phrases with categories and filter what gets sent by category
 - 🚀 Manual "send now" trigger, independent of the schedule
 - ⏸️ Pause/resume the whole scheduler with one switch
+- 📊 `/api/stats` + a Dashboard card: active phrases, subscribers, sent
+  today, most-sent phrase
+- 🔁 Push delivery retries transient failures 3× with exponential backoff
+  before giving up, and logs every attempt to a `delivery_log` table
+- 🪵 Structured JSON logging with a request ID threaded through every log
+  line of a request
+- 🚦 Rate-limited write endpoints (`slowapi`) so a public deployment can't
+  be trivially hammered
 - 📱 Installable PWA: manifest + service worker, works offline for the app
   shell, receives push while the browser is closed
 - 📲 Real install prompt on Chrome/Edge/Android (captured `beforeinstallprompt`,
   verified firing against Chrome's actual installability audit) plus a manual
   "Add to Home Screen" hint for iOS Safari, which never fires that event
-- 🧪 38 passing pytest tests covering CRUD, validation, scheduler, and push logic
+- 🧪 54 passing pytest tests (CRUD, validation, scheduler, push retry logic,
+  rate limits, stats, categories) + one real-browser Playwright E2E test
 - 🐳 Dockerfile + docker-compose (with a real Postgres service) for a
   production-like local run
-- ✅ CI on every push/PR: ruff lint + full pytest suite
+- ✅ CI on every push/PR: ruff lint + full pytest suite + the E2E test
+- 📮 Bruno API collection (`bruno/`) — clone and hit every endpoint in
+  under a minute, no Swagger UI needed
 
 ## Architecture
 
@@ -65,40 +78,48 @@ Browser (PWA)  ←→  FastAPI Server  ←→  SQLite / Postgres
 | Migrations | Alembic |
 | Database | SQLite (dev) / Postgres (production) |
 | Push | pywebpush + VAPID |
+| Logging | structlog (JSON, request-ID-scoped) |
+| Rate limiting | slowapi |
 | Frontend | HTML5 / CSS3 / vanilla JS, Service Worker API, Web App Manifest |
-| Tests | pytest + pytest-asyncio + httpx `ASGITransport` |
-| Deploy | Render.com or Railway (free tier) |
+| Tests | pytest + pytest-asyncio + httpx `ASGITransport` + Playwright (E2E) |
+| API client | Bruno collection (`bruno/`) |
+| Deploy | Render.com or Railway (free tier), or the included Dockerfile |
 
 ## Project Layout
 
 ```
 mindpulse/
 ├── backend/
-│   ├── main.py                 # FastAPI app entry point
-│   ├── config.py                # Settings, VAPID keys, env vars
-│   ├── database.py              # SQLAlchemy async engine + session
-│   ├── models/                  # Phrase, PushSubscription, AppSettings
-│   ├── schemas/                 # Pydantic request/response models
-│   ├── routers/                 # phrases, subscriptions, settings
-│   ├── services/                # scheduler.py, push.py, settings_repo.py
-│   ├── scripts/                 # generate_vapid_keys.py, generate_icons.py, seed_demo_phrases.py
-│   ├── alembic/                 # DB migrations
-│   └── tests/                   # pytest suite (38 tests)
+│   ├── main.py                  # FastAPI app entry point, middleware, OpenAPI metadata
+│   ├── config.py                 # Settings, VAPID keys, env vars
+│   ├── database.py               # SQLAlchemy async engine + session
+│   ├── logging_config.py         # structlog JSON setup
+│   ├── rate_limit.py              # shared slowapi Limiter
+│   ├── models/                   # Phrase, PushSubscription, AppSettings, Category, DeliveryLog
+│   ├── schemas/                  # Pydantic request/response models
+│   ├── routers/                  # phrases, subscriptions, settings, categories, stats
+│   ├── services/                 # scheduler, push (retry logic), phrase_repo, category_repo, settings_repo
+│   ├── scripts/                  # generate_vapid_keys.py, generate_icons.py, seed_demo_phrases.py
+│   ├── alembic/                  # DB migrations
+│   └── tests/                    # pytest suite (53 tests) + test_e2e.py (Playwright, separate marker)
 ├── frontend/
 │   ├── index.html
 │   ├── app.js
 │   ├── style.css
-│   ├── sw.js                    # Service Worker
+│   ├── sw.js                     # Service Worker
 │   ├── manifest.json
 │   └── icons/
-├── .github/workflows/ci.yml     # lint + test on every push/PR
+├── bruno/                         # API collection — every endpoint, runnable via `npx @usebruno/cli run`
+├── .github/workflows/ci.yml       # lint + test + E2E on every push/PR
 ├── .env.example
 ├── requirements.txt
-├── pyproject.toml                # ruff config
+├── requirements-dev.txt           # ruff, playwright — not needed to run the app
+├── pyproject.toml                 # ruff config
 ├── Dockerfile
-├── docker-compose.yml            # app + real Postgres, for local/demo use
-├── Procfile                      # Railway / generic
-└── render.yaml                   # Render.com blueprint
+├── docker-compose.yml             # app + real Postgres, for local/demo use
+├── Procfile                       # Railway / generic
+├── render.yaml                    # Render.com blueprint
+└── CHANGELOG.md
 ```
 
 ## Setup
@@ -109,6 +130,7 @@ mindpulse/
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt   # optional: ruff + Playwright, for linting/E2E
 ```
 
 ### 2. Generate a VAPID key pair
@@ -168,8 +190,20 @@ Open `http://localhost:8000`. Interactive API docs live at
 ### 6. Run the tests
 
 ```bash
-pytest backend/tests -v   # 38 tests
-ruff check .              # lint (also runs in CI)
+pytest backend/tests -v   # 53 tests (fast, no browser needed)
+ruff check .               # lint (also runs in CI)
+
+# One real-browser E2E test — needs the Chromium download below once:
+python -m playwright install chromium
+pytest backend/tests/test_e2e.py -m e2e -v
+```
+
+### 7. Try the API without the frontend
+
+Open `bruno/` in [Bruno](https://www.usebruno.com/) (or run it headless):
+
+```bash
+cd bruno && npx @usebruno/cli run -r --env Local --env-var baseUrl=http://localhost:8000
 ```
 
 ### Alternative: run with Docker (real Postgres)
@@ -201,11 +235,17 @@ production target than local SQLite.
 
 | Method & Path | Status | Purpose |
 |---|---|---|
-| `GET /api/phrases` | 200 | All phrases (active + inactive) |
-| `GET /api/phrases/random` | 200 / 404 | One random **active** phrase |
-| `POST /api/phrases` | 201 | Create a phrase |
-| `PATCH /api/phrases/{id}` | 200 / 404 | Update text, author, or `is_active` |
-| `DELETE /api/phrases/{id}` | 204 / 404 | Hard delete |
+| `GET /api/phrases` | 200 | All phrases (active + inactive), with their tags |
+| `GET /api/phrases/random` | 200 / 404 | One random **active** phrase, respecting the category filter |
+| `POST /api/phrases` | 201 | Create a phrase; optional `categories: string[]`. **Rate-limited: 20/min** |
+| `PATCH /api/phrases/{id}` | 200 / 404 | Update text, author, `is_active`, or replace `categories` |
+| `DELETE /api/phrases/{id}` | 204 / 404 | Hard delete (cascades its delivery_log rows) |
+
+### Categories — `/api/categories`
+
+| Method & Path | Status | Purpose |
+|---|---|---|
+| `GET /api/categories` | 200 | Every tag any phrase has been given, alphabetical |
 
 ### Push Subscriptions — `/api/subscriptions`
 
@@ -218,11 +258,18 @@ production target than local SQLite.
 
 | Method & Path | Status | Purpose |
 |---|---|---|
-| `GET /api/settings` | 200 | Current interval + running state |
-| `PATCH /api/settings` | 200 | Change interval and/or pause/resume |
-| `POST /api/settings/trigger` | 200 | Fire a notification immediately |
+| `GET /api/settings` | 200 | Current interval, running state, category filter |
+| `PATCH /api/settings` | 200 | Change interval, pause/resume, and/or replace `category_filter` |
+| `POST /api/settings/trigger` | 200 | Fire a notification immediately. **Rate-limited: 5/min** |
 
-Full request/response schemas are in the auto-generated docs at `/docs`.
+### Stats — `/api/stats`
+
+| Method & Path | Status | Purpose |
+|---|---|---|
+| `GET /api/stats` | 200 | Phrase/subscriber counts, sent-today, most-sent phrase |
+
+Full request/response schemas (with examples) are in the auto-generated docs
+at `/docs`, or explore them hands-on with the [Bruno collection](#7-try-the-api-without-the-frontend).
 
 ## Deployment (Render or Railway free tier)
 
@@ -250,10 +297,14 @@ MIT — see [LICENSE](LICENSE).
 - [x] Notifications arrive at the configured interval
 - [x] All 8 user stories (see tech spec) pass their acceptance criteria
 - [x] API endpoints return correct HTTP status codes
-- [x] 38 pytest tests pass (well over the 10-test bar)
+- [x] 53 pytest tests + 1 real-browser E2E test pass (well over the 10-test bar)
 - [ ] Deployed to a public URL — see [Deployment](#deployment-render-or-railway-free-tier) above
 - [x] README has setup, env vars, architecture diagram, screenshots
 - [x] No secrets in git history (`.env` gitignored from commit #1)
+
+See [CHANGELOG.md](CHANGELOG.md) for what shipped in each pass beyond this
+baseline: structured logging, rate limiting, delivery retries, stats, phrase
+categories, the E2E test, and the API tooling around it.
 
 ## Built With Claude Code
 

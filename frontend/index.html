@@ -69,6 +69,26 @@
           <button id="btn-trigger" class="btn-primary">🚀 Send now</button>
         </div>
       </div>
+
+      <div class="card">
+        <h2>Stats</h2>
+        <div class="stat-row">
+          <span class="label">Active phrases</span>
+          <span class="value"><span id="stat-active-phrases">—</span> / <span id="stat-total-phrases">—</span></span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Subscribers</span>
+          <span class="value" id="stat-subscribers">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Sent today</span>
+          <span class="value" id="stat-sent-today">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Most sent</span>
+          <span class="value" id="stat-top-phrase">—</span>
+        </div>
+      </div>
     </section>
 
     <!-- ===== Phrases List ===== -->
@@ -91,6 +111,10 @@
           <div class="field">
             <label for="add-author">Author (optional)</label>
             <input id="add-author" type="text" maxlength="120" placeholder="Unknown" />
+          </div>
+          <div class="field">
+            <label for="add-categories">Categories (optional, comma-separated)</label>
+            <input id="add-categories" type="text" placeholder="discipline, focus" />
           </div>
           <button type="submit" class="btn-primary">➕ Add Phrase</button>
         </form>
@@ -117,6 +141,12 @@
             <span class="slider"></span>
           </label>
         </div>
+      </div>
+
+      <div class="card">
+        <h2>Category Filter</h2>
+        <p class="hint">Only send phrases tagged with the selected categories. None selected = send from all active phrases.</p>
+        <div id="category-filter-list"></div>
       </div>
 
       <div class="card">

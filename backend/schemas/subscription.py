@@ -4,14 +4,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class SubscriptionKeys(BaseModel):
-    p256dh: str
-    auth: str
+    p256dh: str = Field(description="Browser's public key for this subscription.")
+    auth: str = Field(description="Browser's auth secret for this subscription.")
 
 
 class SubscriptionCreate(BaseModel):
     """Mirrors the shape of a browser PushSubscription.toJSON() object."""
 
-    endpoint: str = Field(min_length=1)
+    endpoint: str = Field(min_length=1, examples=["https://fcm.googleapis.com/fcm/send/abc123..."])
     keys: SubscriptionKeys
 
 

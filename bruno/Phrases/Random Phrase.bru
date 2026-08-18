@@ -1,0 +1,15 @@
+meta {
+  name: Random Phrase
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/phrases/random
+  body: none
+  auth: none
+}
+
+docs {
+  Respects the active category filter set via PATCH /api/settings.
+}

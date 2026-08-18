@@ -1,0 +1,16 @@
+meta {
+  name: Trigger Notification
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/settings/trigger
+  body: none
+  auth: none
+}
+
+docs {
+  Fires immediately regardless of the schedule. Rate-limited to
+  5 requests/minute per client.
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Create Phrase
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/phrases
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "text": "Make it first, make it great later.",
+    "author": "Unknown",
+    "categories": ["discipline"]
+  }
+}
+
+docs {
+  Rate-limited to 20 requests/minute per client.
+}

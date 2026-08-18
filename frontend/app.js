@@ -65,6 +65,7 @@ function urlBase64ToUint8Array(base64String) {
 function showView(name) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === `view-${name}`));
   document.querySelectorAll("nav.tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
+  if (name === "dashboard") loadDashboard();
   if (name === "phrases") loadPhrases();
   if (name === "settings") loadSettings();
 }
@@ -243,6 +244,24 @@ async function loadDashboard() {
   } catch (err) {
     console.error(err);
   }
+  loadStats();
+}
+
+async function loadStats() {
+  try {
+    const stats = await apiRequest("/stats");
+    document.getElementById("stat-active-phrases").textContent = stats.active_phrases;
+    document.getElementById("stat-total-phrases").textContent = stats.total_phrases;
+    document.getElementById("stat-subscribers").textContent = stats.total_subscribers;
+    document.getElementById("stat-sent-today").textContent = stats.notifications_sent_today;
+
+    const top = document.getElementById("stat-top-phrase");
+    top.textContent = stats.most_sent_phrase
+      ? `"${stats.most_sent_phrase.text}" (${stats.most_sent_phrase.times_sent}×)`
+      : "—";
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function previewPhrase() {
@@ -295,6 +314,7 @@ function renderPhrases() {
       <div class="phrase-body">
         <div class="phrase-text" spellcheck="false">${escapeHtml(phrase.text)}</div>
         <div class="phrase-meta">${phrase.author ? escapeHtml(phrase.author) + " · " : ""}sent ${phrase.times_sent}×</div>
+        ${phrase.categories.length ? `<div class="chip-row">${phrase.categories.map((c) => `<span class="chip">${escapeHtml(c)}</span>`).join("")}</div>` : ""}
       </div>
       <div class="phrase-actions">
         <button class="icon-btn edit-btn" title="Edit">✏️</button>
@@ -406,10 +426,18 @@ async function deletePhrase(id) {
 // Add phrase
 // ---------------------------------------------------------------------
 
+function parseCategoriesInput(raw) {
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 document.getElementById("add-phrase-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const textInput = document.getElementById("add-text");
   const authorInput = document.getElementById("add-author");
+  const categoriesInput = document.getElementById("add-categories");
 
   const text = textInput.value.trim();
   if (!text) return;
@@ -417,10 +445,15 @@ document.getElementById("add-phrase-form").addEventListener("submit", async (e) 
   try {
     await apiRequest("/phrases", {
       method: "POST",
-      body: { text, author: authorInput.value.trim() || null },
+      body: {
+        text,
+        author: authorInput.value.trim() || null,
+        categories: parseCategoriesInput(categoriesInput.value),
+      },
     });
     textInput.value = "";
     authorInput.value = "";
+    categoriesInput.value = "";
     toast("Phrase added ✅");
     showView("phrases");
   } catch (err) {
@@ -443,7 +476,50 @@ async function loadSettings() {
     range.value = settings.interval_minutes;
     display.textContent = settings.interval_minutes;
     running.checked = settings.is_running;
+
+    await renderCategoryFilter(settings.category_filter);
   } catch (err) {
+    console.error(err);
+  }
+}
+
+async function renderCategoryFilter(activeNames) {
+  const container = document.getElementById("category-filter-list");
+  let categories;
+  try {
+    categories = await apiRequest("/categories");
+  } catch (err) {
+    console.error(err);
+    return;
+  }
+
+  if (categories.length === 0) {
+    container.innerHTML = '<p class="hint">Tag a phrase (in the Add tab) to unlock filtering by category.</p>';
+    return;
+  }
+
+  const activeSet = new Set(activeNames);
+  container.innerHTML = `<div class="checkbox-list">${categories
+    .map(
+      (c) =>
+        `<label><input type="checkbox" value="${escapeHtml(c.name)}" ${activeSet.has(c.name) ? "checked" : ""} />${escapeHtml(c.name)}</label>`
+    )
+    .join("")}</div>`;
+
+  container.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+    cb.addEventListener("change", updateCategoryFilter);
+  });
+}
+
+async function updateCategoryFilter() {
+  const selected = [...document.querySelectorAll('#category-filter-list input[type="checkbox"]:checked')].map(
+    (cb) => cb.value
+  );
+  try {
+    await apiRequest("/settings", { method: "PATCH", body: { category_filter: selected } });
+    toast(selected.length ? `Filtering: ${selected.join(", ")}` : "Filter cleared — sending from all phrases");
+  } catch (err) {
+    toast("Couldn't update category filter.");
     console.error(err);
   }
 }

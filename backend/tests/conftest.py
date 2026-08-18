@@ -22,7 +22,19 @@ from httpx import ASGITransport, AsyncClient
 
 from backend.database import Base, engine
 from backend.main import app
+from backend.rate_limit import limiter
 from backend.services import push as push_service
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    """The Limiter is a module-level singleton, so without a reset every
+    test's requests would count against the same bucket — e.g. two dozen
+    tests each doing one POST /api/phrases would eventually 429 a later,
+    otherwise-correct test purely because of test order/count."""
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest_asyncio.fixture(autouse=True)
