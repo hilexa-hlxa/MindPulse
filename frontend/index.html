@@ -6,6 +6,12 @@
   <title>MindPulse</title>
   <meta name="description" content="Scheduled motivational push notifications, delivered like a native app." />
   <meta name="theme-color" content="#2E86AB" />
+  <!-- iOS Safari ignores manifest.json's `display: standalone` unless these
+       are also present, and never fires `beforeinstallprompt` at all —
+       see the manual "Add to Home Screen" hint in app.js. -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MindPulse" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <link rel="icon" href="/icons/icon-192.png" />
@@ -41,6 +47,12 @@
           <span class="label">Last sent</span>
           <span class="value" id="dash-last-sent">Never</span>
         </div>
+      </div>
+
+      <div id="install-card" class="card" hidden>
+        <h2>Install</h2>
+        <p id="install-hint" class="hint">Install MindPulse on your home screen for the full native-app feel.</p>
+        <button id="btn-install" class="btn-secondary" hidden>📲 Install App</button>
       </div>
 
       <div class="card">

@@ -1,10 +1,9 @@
 import asyncio
 from logging.config import fileConfig
 
+from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
-from alembic import context
 
 # Make `backend.*` importable when Alembic is invoked as `alembic ...`
 # from the repo root (this file lives at backend/alembic/env.py).

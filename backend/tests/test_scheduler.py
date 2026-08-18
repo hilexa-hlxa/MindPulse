@@ -1,5 +1,4 @@
 """Tests for the notification delivery job itself (spec 6.2)."""
-import pytest
 from pywebpush import WebPushException
 
 from backend.database import AsyncSessionLocal

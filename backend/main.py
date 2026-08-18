@@ -14,7 +14,8 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.config import settings
 from backend.database import init_models
-from backend.routers import phrases, settings as settings_router, subscriptions
+from backend.routers import phrases, subscriptions
+from backend.routers import settings as settings_router
 from backend.services import scheduler as scheduler_service
 
 logging.basicConfig(level=logging.INFO)

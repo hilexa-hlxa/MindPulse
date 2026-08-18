@@ -1,11 +1,28 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+def _normalize_text(value: str) -> str:
+    stripped = value.strip()
+    if not stripped:
+        raise ValueError("must not be blank")
+    return stripped
+
+
+def _normalize_author(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
 
 
 class PhraseCreate(BaseModel):
     text: str = Field(min_length=1, max_length=500)
     author: str | None = Field(default=None, max_length=120)
+
+    _clean_text = field_validator("text")(_normalize_text)
+    _clean_author = field_validator("author")(_normalize_author)
 
 
 class PhraseUpdate(BaseModel):
@@ -14,6 +31,13 @@ class PhraseUpdate(BaseModel):
     text: str | None = Field(default=None, min_length=1, max_length=500)
     author: str | None = Field(default=None, max_length=120)
     is_active: bool | None = None
+
+    @field_validator("text")
+    @classmethod
+    def _clean_text(cls, value: str | None) -> str | None:
+        return _normalize_text(value) if value is not None else None
+
+    _clean_author = field_validator("author")(_normalize_author)
 
 
 class PhraseOut(BaseModel):

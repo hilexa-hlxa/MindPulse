@@ -1,5 +1,8 @@
 # MindPulse
 
+[![CI](https://github.com/hilexa-hlxa/MindPulse/actions/workflows/ci.yml/badge.svg)](https://github.com/hilexa-hlxa/MindPulse/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Scheduled motivational push notifications, delivered like a native app.
 
 MindPulse is a Progressive Web App: install it to your phone's home screen and
@@ -23,7 +26,13 @@ REST API design.
 - ⏸️ Pause/resume the whole scheduler with one switch
 - 📱 Installable PWA: manifest + service worker, works offline for the app
   shell, receives push while the browser is closed
-- 🧪 29 passing pytest tests covering CRUD, validation, and scheduler logic
+- 📲 Real install prompt on Chrome/Edge/Android (captured `beforeinstallprompt`,
+  verified firing against Chrome's actual installability audit) plus a manual
+  "Add to Home Screen" hint for iOS Safari, which never fires that event
+- 🧪 38 passing pytest tests covering CRUD, validation, scheduler, and push logic
+- 🐳 Dockerfile + docker-compose (with a real Postgres service) for a
+  production-like local run
+- ✅ CI on every push/PR: ruff lint + full pytest suite
 
 ## Architecture
 
@@ -72,9 +81,9 @@ mindpulse/
 │   ├── schemas/                 # Pydantic request/response models
 │   ├── routers/                 # phrases, subscriptions, settings
 │   ├── services/                # scheduler.py, push.py, settings_repo.py
-│   ├── scripts/                 # generate_vapid_keys.py, generate_icons.py
+│   ├── scripts/                 # generate_vapid_keys.py, generate_icons.py, seed_demo_phrases.py
 │   ├── alembic/                 # DB migrations
-│   └── tests/                   # pytest suite (29 tests)
+│   └── tests/                   # pytest suite (38 tests)
 ├── frontend/
 │   ├── index.html
 │   ├── app.js
@@ -82,10 +91,14 @@ mindpulse/
 │   ├── sw.js                    # Service Worker
 │   ├── manifest.json
 │   └── icons/
+├── .github/workflows/ci.yml     # lint + test on every push/PR
 ├── .env.example
 ├── requirements.txt
-├── Procfile                     # Railway / generic
-└── render.yaml                  # Render.com blueprint
+├── pyproject.toml                # ruff config
+├── Dockerfile
+├── docker-compose.yml            # app + real Postgres, for local/demo use
+├── Procfile                      # Railway / generic
+└── render.yaml                   # Render.com blueprint
 ```
 
 ## Setup
@@ -124,7 +137,7 @@ alembic upgrade head
 (For local dev this is optional — the app also calls `create_all` on
 startup — but it's how a real Postgres deploy gets its schema.)
 
-### 4. (Optional) Generate app icons
+### 4. (Optional) Generate app icons or seed demo phrases
 
 Icons are already committed under `frontend/icons/`, but you can regenerate
 them any time:
@@ -132,6 +145,12 @@ them any time:
 ```bash
 pip install Pillow   # dev-only, not a runtime dependency
 python backend/scripts/generate_icons.py
+```
+
+To avoid staring at an empty Phrases list, seed a few starter phrases:
+
+```bash
+python -m backend.scripts.seed_demo_phrases
 ```
 
 ### 5. Run the app
@@ -149,8 +168,21 @@ Open `http://localhost:8000`. Interactive API docs live at
 ### 6. Run the tests
 
 ```bash
-pytest backend/tests -v
+pytest backend/tests -v   # 38 tests
+ruff check .              # lint (also runs in CI)
 ```
+
+### Alternative: run with Docker (real Postgres)
+
+```bash
+cp .env.example .env   # fill in VAPID keys as above
+docker compose up --build
+```
+
+This builds the app image and a Postgres 16 container, runs
+`alembic upgrade head` against real Postgres on boot, and serves on
+`http://localhost:8000` — a closer approximation of the Render/Railway
+production target than local SQLite.
 
 ## Environment Variables
 
@@ -205,13 +237,20 @@ Full request/response schemas are in the auto-generated docs at `/docs`.
 4. Once live, open the public URL on a phone, tap **Add to Home Screen**,
    then **Enable Notifications** inside the installed app.
 
+Either platform also happily builds straight from the `Dockerfile` instead of
+the native Python buildpack, if you'd rather deploy the container as-is.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ## Definition of Done
 
 - [x] Installs to a mobile home screen and opens in standalone mode
 - [x] Notifications arrive at the configured interval
 - [x] All 8 user stories (see tech spec) pass their acceptance criteria
 - [x] API endpoints return correct HTTP status codes
-- [x] 29 pytest tests pass (well over the 10-test bar)
+- [x] 38 pytest tests pass (well over the 10-test bar)
 - [ ] Deployed to a public URL — see [Deployment](#deployment-render-or-railway-free-tier) above
 - [x] README has setup, env vars, architecture diagram, screenshots
 - [x] No secrets in git history (`.env` gitignored from commit #1)

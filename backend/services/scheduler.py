@@ -8,7 +8,7 @@ same asyncio event loop FastAPI/uvicorn already has running, so an
 `async def` job can be awaited directly instead of needing a thread.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import func, select
@@ -49,7 +49,7 @@ async def send_random_notification() -> dict:
 
         phrase.times_sent += 1
         app_settings = await get_or_create_settings(db)
-        app_settings.last_sent_at = datetime.now(timezone.utc)
+        app_settings.last_sent_at = datetime.now(UTC)
         await db.commit()
 
         logger.info("Sent phrase #%s to %s subscriber(s).", phrase.id, push_result["delivered"])

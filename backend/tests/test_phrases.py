@@ -1,5 +1,4 @@
 """CRUD + validation tests for /api/phrases (spec 5.1)."""
-import pytest
 
 
 async def _create(client, text="Ship it.", author="Test"):
@@ -25,6 +24,22 @@ async def test_create_phrase_without_author_is_optional(client):
 async def test_create_phrase_rejects_empty_text(client):
     resp = await client.post("/api/phrases", json={"text": ""})
     assert resp.status_code == 422
+
+
+async def test_create_phrase_rejects_whitespace_only_text(client):
+    resp = await client.post("/api/phrases", json={"text": "   "})
+    assert resp.status_code == 422
+
+
+async def test_create_phrase_trims_text_and_author_whitespace(client):
+    body = await _create(client, "  padded text  ", "  padded author  ")
+    assert body["text"] == "padded text"
+    assert body["author"] == "padded author"
+
+
+async def test_create_phrase_treats_blank_author_as_none(client):
+    body = await _create(client, "Some text", "   ")
+    assert body["author"] is None
 
 
 async def test_create_phrase_requires_text_field(client):

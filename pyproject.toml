@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+exclude = [".venv", "backend/alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = [
+  "E501",  # line length is a soft guideline here, not a hard failure
+  "B008",  # FastAPI's `Depends(...)` as a default argument is the idiomatic pattern
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/alembic/env.py" = ["E402"]  # env setup must precede backend.* imports

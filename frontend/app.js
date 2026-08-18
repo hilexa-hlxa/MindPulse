@@ -87,6 +87,70 @@ async function registerServiceWorker() {
   }
 }
 
+// ---------------------------------------------------------------------
+// "Add to Home Screen" install affordance (US-01)
+//
+// Chrome/Edge/Android fire `beforeinstallprompt`, which we capture and
+// replay from a real button tap (browsers ignore prompt() calls that
+// aren't triggered by user gesture). iOS Safari never fires that event
+// at all — it only supports the manual Share → Add to Home Screen flow —
+// so it gets an instructional hint instead.
+// ---------------------------------------------------------------------
+
+let deferredInstallPrompt = null;
+
+function isStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function isIos() {
+  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+}
+
+function refreshInstallCard() {
+  const card = document.getElementById("install-card");
+  const hint = document.getElementById("install-hint");
+  const btn = document.getElementById("btn-install");
+
+  if (isStandalone()) {
+    card.hidden = true;
+    return;
+  }
+
+  if (deferredInstallPrompt) {
+    card.hidden = false;
+    btn.hidden = false;
+    hint.textContent = "Install MindPulse on your home screen for the full native-app feel.";
+  } else if (isIos()) {
+    card.hidden = false;
+    btn.hidden = true;
+    hint.textContent = "Tap the Share icon, then “Add to Home Screen” to install MindPulse.";
+  } else {
+    // No install signal available (e.g. desktop Firefox) — nothing useful to show.
+    card.hidden = true;
+  }
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  refreshInstallCard();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  toast("MindPulse installed 🎉");
+  refreshInstallCard();
+});
+
+document.getElementById("btn-install").addEventListener("click", async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  refreshInstallCard();
+});
+
 function updatePermissionPill() {
   const pill = document.getElementById("perm-pill");
   const supported = "Notification" in window && "PushManager" in window;
@@ -426,5 +490,6 @@ document.getElementById("btn-trigger").addEventListener("click", triggerNow);
 window.addEventListener("load", () => {
   registerServiceWorker();
   updatePermissionPill();
+  refreshInstallCard();
   loadDashboard();
 });
