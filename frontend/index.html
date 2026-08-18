@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>MindPulse</title>
+  <meta name="description" content="Scheduled motivational push notifications, delivered like a native app." />
+  <meta name="theme-color" content="#2E86AB" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <img src="/icons/icon-192.png" alt="" />
+      <div>
+        <h1>MindPulse</h1>
+        <div class="subtitle">Motivation, on schedule.</div>
+      </div>
+    </header>
+
+    <!-- ===== Dashboard ===== -->
+    <section id="view-dashboard" class="view active">
+      <div class="card">
+        <h2>Status</h2>
+        <div class="stat-row">
+          <span class="label">Notifications</span>
+          <span class="value"><span id="perm-pill" class="pill off">Disabled</span></span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Scheduler</span>
+          <span class="value"><span id="scheduler-pill" class="pill off">—</span></span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Interval</span>
+          <span class="value" id="dash-interval">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="label">Last sent</span>
+          <span class="value" id="dash-last-sent">Never</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Enable</h2>
+        <p class="hint">MindPulse only asks for notification permission when you tap the button below — never automatically.</p>
+        <button id="btn-enable" class="btn-primary">🔔 Enable Notifications</button>
+      </div>
+
+      <div class="card">
+        <h2>Preview</h2>
+        <div id="dash-preview" class="phrase-preview">Tap below to preview a random active phrase.</div>
+        <div class="btn-row">
+          <button id="btn-preview" class="btn-secondary">🎲 Preview a phrase</button>
+          <button id="btn-trigger" class="btn-primary">🚀 Send now</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Phrases List ===== -->
+    <section id="view-phrases" class="view">
+      <div class="card">
+        <h2>Your Phrases</h2>
+        <div id="phrase-list"></div>
+      </div>
+    </section>
+
+    <!-- ===== Add Phrase ===== -->
+    <section id="view-add" class="view">
+      <div class="card">
+        <h2>Add a Phrase</h2>
+        <form id="add-phrase-form">
+          <div class="field">
+            <label for="add-text">Phrase</label>
+            <textarea id="add-text" rows="3" maxlength="500" placeholder="Make it first, make it great later." required></textarea>
+          </div>
+          <div class="field">
+            <label for="add-author">Author (optional)</label>
+            <input id="add-author" type="text" maxlength="120" placeholder="Unknown" />
+          </div>
+          <button type="submit" class="btn-primary">➕ Add Phrase</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ===== Settings ===== -->
+    <section id="view-settings" class="view">
+      <div class="card">
+        <h2>Interval</h2>
+        <div class="range-value"><span id="interval-display">60</span> min</div>
+        <div class="field">
+          <input id="interval-range" type="range" min="15" max="240" step="15" value="60" />
+        </div>
+        <p class="hint">How often MindPulse pushes a phrase — from every 15 minutes to every 4 hours.</p>
+      </div>
+
+      <div class="card">
+        <h2>Scheduler</h2>
+        <div class="toggle-row">
+          <span>Notifications running</span>
+          <label class="switch">
+            <input id="settings-running" type="checkbox" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>About</h2>
+        <p class="hint">
+          MindPulse is a portfolio PWA: FastAPI + APScheduler backend, Web Push
+          notifications, and a vanilla-JS frontend — no framework, by design.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <nav class="tabbar">
+    <button data-view="dashboard" class="active"><span class="tab-icon">🏠</span>Home</button>
+    <button data-view="phrases"><span class="tab-icon">📝</span>Phrases</button>
+    <button data-view="add"><span class="tab-icon">➕</span>Add</button>
+    <button data-view="settings"><span class="tab-icon">⚙️</span>Settings</button>
+  </nav>
+
+  <script src="/app.js"></script>
+</body>
+</html>
