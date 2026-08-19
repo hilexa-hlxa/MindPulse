@@ -260,7 +260,7 @@ production target than local SQLite.
 |---|---|---|
 | `GET /api/settings` | 200 | Current interval, running state, category filter |
 | `PATCH /api/settings` | 200 | Change interval, pause/resume, and/or replace `category_filter` |
-| `POST /api/settings/trigger` | 200 | Fire a notification immediately. **Rate-limited: 5/min** |
+| `POST /api/settings/trigger` | 200 | Fire a notification immediately. **Rate-limited: 15/min** |
 
 ### Stats — `/api/stats`
 

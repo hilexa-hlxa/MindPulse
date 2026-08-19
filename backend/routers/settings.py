@@ -47,9 +47,9 @@ async def update_settings(payload: SettingsUpdate, db: AsyncSession = Depends(ge
     response_model=TriggerResult,
     summary="Send a notification right now",
     description="Fires immediately regardless of the schedule (US-07). "
-    "Rate-limited to 5 requests/minute per client.",
+    "Rate-limited to 15 requests/minute per client.",
 )
-@limiter.limit("5/minute")
+@limiter.limit("15/minute")
 async def trigger_notification(request: Request):
     result = await scheduler_service.send_random_notification()
     return TriggerResult(sent=result["sent"], reason=result.get("reason"))

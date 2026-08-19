@@ -178,6 +178,33 @@ function updatePermissionPill() {
   }
 }
 
+async function syncPushSubscription() {
+  // The browser can hold onto "I'm subscribed" (localStorage) long after
+  // the server's own record of that subscription is gone -- e.g. a reset
+  // dev database, or a subscription the server deactivated after a 410
+  // Gone. Re-POSTing on every load is a harmless idempotent upsert (see
+  // routers/subscriptions.py) and closes that drift automatically,
+  // instead of leaving the Enable button stuck showing "Enabled" while
+  // nothing actually gets delivered.
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+  if (Notification.permission !== "granted") return;
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    await apiRequest("/subscriptions", { method: "POST", body: subscription.toJSON() });
+    localStorage.setItem(STORAGE_KEY, "true");
+  } catch (err) {
+    console.error("Push subscription sync failed:", err);
+  } finally {
+    updatePermissionPill();
+  }
+}
+
 async function enableNotifications() {
   const btn = document.getElementById("btn-enable");
 
@@ -590,4 +617,5 @@ window.addEventListener("load", () => {
   updatePermissionPill();
   refreshInstallCard();
   loadDashboard();
+  syncPushSubscription();
 });

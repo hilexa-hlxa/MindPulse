@@ -94,6 +94,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   delivery log FK) and returns `delivered`/`expired`/`failed` counts
   instead of a `sent` count — the old key name collided with the
   cycle-level `sent: bool` in the caller's merged response dict.
+- `POST /api/settings/trigger` rate limit raised from 5/minute to
+  15/minute — 5 was too easy to trip while manually testing notifications
+  during development.
+
+### Fixed
+- Client/server push-subscription drift: the frontend trusted
+  `localStorage`'s "I'm subscribed" flag on its own, so if the server's
+  copy of the subscription ever went away (a reset dev database, or the
+  server deactivating it after a 410 Gone) the Enable button stayed stuck
+  showing "✅ Notifications Enabled" — permanently disabled, no way to
+  re-subscribe from the UI — while nothing was actually being delivered.
+  `send_to_all()` would loop over zero subscriptions and report success
+  every time. Now the app re-POSTs the browser's existing push
+  subscription to the server on every load (`syncPushSubscription()`,
+  an idempotent upsert), so server-side state can't silently drift from
+  what the client believes.
 
 ## [1.0.1] — Hardening pass
 

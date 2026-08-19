@@ -155,6 +155,26 @@ async def vapid_public_key():
     return {"publicKey": settings.vapid_public_key}
 
 
+class NoCacheStaticFiles(StaticFiles):
+    """Force revalidation instead of relying on browsers' heuristic
+    freshness caching.
+
+    We don't set explicit Cache-Control on these files, so a browser is
+    free to guess a freshness window from Last-Modified alone (Chrome's
+    heuristic is roughly 10% of file age) and serve app.js/index.html
+    from disk with *zero* network requests — meaning a deploy can go out
+    and a returning user's browser keeps running the old JS for a long
+    time with no way to notice. `no-cache` still lets the browser cache
+    the body, but forces a conditional GET (a cheap 304 if unchanged) on
+    every load, so a new version is always picked up immediately.
+    """
+
+    def file_response(self, *args, **kwargs):
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # Serve the PWA frontend. Mounted last so /api/* routes above always win.
 if FRONTEND_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+    app.mount("/", NoCacheStaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

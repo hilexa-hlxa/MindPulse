@@ -11,10 +11,10 @@ async def test_create_phrase_is_rate_limited_at_20_per_minute(client):
     assert "rate limit" in resp.json()["detail"].lower()
 
 
-async def test_trigger_is_rate_limited_at_5_per_minute(client):
+async def test_trigger_is_rate_limited_at_15_per_minute(client):
     await client.post("/api/phrases", json={"text": "Some phrase"})
 
-    for i in range(5):
+    for i in range(15):
         resp = await client.post("/api/settings/trigger")
         assert resp.status_code == 200, f"trigger {i} should still be within budget"
 
