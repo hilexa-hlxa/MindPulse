@@ -41,8 +41,12 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const title = data.title || "MindPulse";
-  const body = data.author ? `${data.body} — ${data.author}` : data.body;
+  // The phrase itself is the headline — browsers render the notification's
+  // `title` argument in bold, so leading with the phrase (not "MindPulse")
+  // reads like a native app's content notification: message first, app
+  // name second.
+  const title = data.body;
+  const body = data.author ? `MindPulse — ${data.author}` : "MindPulse";
 
   const options = {
     body,
