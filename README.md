@@ -287,6 +287,34 @@ at `/docs`, or explore them hands-on with the [Bruno collection](#7-try-the-api-
 Either platform also happily builds straight from the `Dockerfile` instead of
 the native Python buildpack, if you'd rather deploy the container as-is.
 
+### Alternative: split frontend (Vercel) + backend (Railway)
+
+**Vercel is serverless — it can't run `AsyncIOScheduler`'s in-process
+background loop, so the backend (API + scheduler + DB) must stay on
+Railway.** Only the static frontend moves to Vercel. This is done via
+Vercel's rewrites, which reverse-proxy `/api/*` to Railway server-side — the
+frontend keeps calling relative `/api/...` paths exactly as it does today
+(no JS changes), and since the browser only ever sees one origin (the
+Vercel domain), CORS never enters the picture at all.
+
+1. Deploy the backend to Railway first (steps above) and note its public
+   URL, e.g. `https://mindpulse-production.up.railway.app`.
+2. Edit `frontend/vercel.json`, replacing the placeholder with that URL:
+   ```json
+   { "rewrites": [{ "source": "/api/:path*", "destination": "https://YOUR-RAILWAY-URL/api/:path*" }] }
+   ```
+3. On [vercel.com](https://vercel.com): New Project → import this repo →
+   set **Root Directory** to `frontend` (this repo is a monorepo; Vercel
+   needs to know the static site lives in `frontend/`, not the repo root)
+   → Framework Preset: **Other** (no build step) → Deploy.
+4. (Optional, defense in depth) Set `ALLOWED_ORIGINS` on Railway to your
+   Vercel domain — not required for the app to function since the proxied
+   requests never trigger browser CORS, but it's a reasonable belt-and-
+   suspenders setting if the API is ever called directly.
+5. Open the Vercel URL, install it, enable notifications. The service
+   worker registers on the Vercel origin (same origin as the page, as
+   required), and its subscription POST rides the same `/api/*` proxy.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
