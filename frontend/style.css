@@ -1,15 +1,24 @@
 :root {
-  --bg: #0f1b2b;
-  --surface: #16263c;
-  --surface-raised: #1e3a5f;
-  --accent: #2e86ab;
-  --accent-light: #5fb0d6;
-  --text: #f4f7fa;
-  --text-dim: #a8b6c8;
-  --danger: #d9534f;
-  --success: #4caf50;
-  --border: rgba(244, 247, 250, 0.08);
+  /* Warm ink, not cool navy — a personal companion, not a SaaS dashboard. */
+  --ink: #15120f;
+  --ink-raised: #201b16;
+  --ink-raised-2: #2c241c;
+  --ink-line: rgba(243, 234, 219, 0.09);
+  --ember: #ff6b4a;
+  --ember-dim: #c44e34;
+  --parchment: #f3eadb;
+  --ash: #a89e8f;
+  --success: #7fb069;
+  --danger: #e0574a;
   --radius: 14px;
+
+  /* Type pairing: serif for the phrases (they're quotes), mono for
+     chrome/labels/data (nods to the audience), sans for everything
+     that needs to stay quietly legible at small sizes. */
+  --font-quote: ui-serif, Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono", Menlo, Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
   color-scheme: dark;
 }
 
@@ -25,9 +34,9 @@ body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: linear-gradient(180deg, var(--bg) 0%, #0a1420 100%);
-  color: var(--text);
+  font-family: var(--font-sans);
+  background: linear-gradient(180deg, var(--ink) 0%, #0e0b09 100%);
+  color: var(--parchment);
   min-height: 100vh;
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
   -webkit-font-smoothing: antialiased;
@@ -53,14 +62,15 @@ header.topbar img {
 }
 
 header.topbar h1 {
-  font-size: 1.3rem;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
   margin: 0;
   letter-spacing: -0.01em;
 }
 
 header.topbar .subtitle {
   font-size: 0.78rem;
-  color: var(--text-dim);
+  color: var(--ash);
   margin-top: 1px;
 }
 
@@ -85,19 +95,20 @@ header.topbar .subtitle {
 }
 
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--ink-raised);
+  border: 1px solid var(--ink-line);
   border-radius: var(--radius);
   padding: 18px;
   margin-bottom: 16px;
 }
 
 .card h2 {
+  font-family: var(--font-mono);
   margin: 0 0 12px;
-  font-size: 1rem;
-  color: var(--accent-light);
+  font-size: 0.85rem;
+  color: var(--ember);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
 }
 
 .stat-row {
@@ -105,7 +116,7 @@ header.topbar .subtitle {
   justify-content: space-between;
   align-items: baseline;
   padding: 8px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--ink-line);
 }
 
 .stat-row:last-child {
@@ -113,32 +124,34 @@ header.topbar .subtitle {
 }
 
 .stat-row .label {
-  color: var(--text-dim);
+  color: var(--ash);
   font-size: 0.88rem;
 }
 
 .stat-row .value {
+  font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
 }
 
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
 .pill.on {
-  background: rgba(76, 175, 80, 0.15);
+  background: rgba(127, 176, 105, 0.15);
   color: var(--success);
 }
 
 .pill.off {
-  background: rgba(217, 83, 79, 0.15);
+  background: rgba(224, 87, 74, 0.15);
   color: var(--danger);
 }
 
@@ -148,6 +161,36 @@ header.topbar .subtitle {
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Signature element: the scheduler's own status reads as an actual pulse —
+   a heartbeat-monitor ping, not a static dot — because that's literally
+   what this product does. Restrained to this one indicator on purpose. */
+.pill.pulse::before {
+  animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  box-shadow: 0 0 0 0 currentColor;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill.pulse::before {
+    animation: none;
+  }
+  .view {
+    animation: none;
+  }
 }
 
 button,
@@ -171,18 +214,26 @@ button:disabled {
   cursor: not-allowed;
 }
 
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+
 .btn-primary {
-  background: var(--accent);
-  color: #fff;
+  background: var(--ember);
+  color: #1a1108;
 }
 
 .btn-secondary {
-  background: var(--surface-raised);
-  color: var(--text);
+  background: var(--ink-raised-2);
+  color: var(--parchment);
 }
 
 .btn-danger {
-  background: rgba(217, 83, 79, 0.15);
+  background: rgba(224, 87, 74, 0.15);
   color: var(--danger);
 }
 
@@ -209,18 +260,18 @@ button:disabled {
 .field label {
   display: block;
   font-size: 0.82rem;
-  color: var(--text-dim);
+  color: var(--ash);
   margin-bottom: 6px;
 }
 
 .field input[type="text"],
 .field textarea {
   width: 100%;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--ink);
+  border: 1px solid var(--ink-line);
   border-radius: 10px;
   padding: 11px 12px;
-  color: var(--text);
+  color: var(--parchment);
   font: inherit;
   resize: vertical;
 }
@@ -228,19 +279,20 @@ button:disabled {
 .field input[type="text"]:focus,
 .field textarea:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--ember);
 }
 
 .field input[type="range"] {
   width: 100%;
-  accent-color: var(--accent);
+  accent-color: var(--ember);
 }
 
 .range-value {
+  font-family: var(--font-mono);
   text-align: center;
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--accent-light);
+  color: var(--ember);
   margin-bottom: 6px;
 }
 
@@ -267,7 +319,7 @@ button:disabled {
 .switch .slider {
   position: absolute;
   inset: 0;
-  background: var(--surface-raised);
+  background: var(--ink-raised-2);
   border-radius: 999px;
   transition: 0.2s;
   cursor: pointer;
@@ -280,7 +332,7 @@ button:disabled {
   height: 20px;
   left: 3px;
   top: 3px;
-  background: #fff;
+  background: var(--parchment);
   border-radius: 50%;
   transition: 0.2s;
 }
@@ -293,11 +345,16 @@ button:disabled {
   transform: translateX(20px);
 }
 
+.switch input:focus-visible + .slider {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+
 .phrase-item {
   display: flex;
   gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ink-line);
   align-items: flex-start;
 }
 
@@ -315,18 +372,15 @@ button:disabled {
 }
 
 .phrase-item .phrase-text {
-  font-size: 0.95rem;
+  font-family: var(--font-quote);
+  font-size: 1rem;
+  line-height: 1.45;
   word-wrap: break-word;
-}
-
-.phrase-item .phrase-text[contenteditable="true"] {
-  outline: none;
-  border-bottom: 1px dashed var(--accent);
 }
 
 .phrase-item .phrase-meta {
   font-size: 0.74rem;
-  color: var(--text-dim);
+  color: var(--ash);
   margin-top: 4px;
 }
 
@@ -338,12 +392,13 @@ button:disabled {
 }
 
 .chip {
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
   font-weight: 600;
   padding: 2px 9px;
   border-radius: 999px;
-  background: rgba(46, 134, 171, 0.16);
-  color: var(--accent-light);
+  background: rgba(255, 107, 74, 0.14);
+  color: var(--ember);
   letter-spacing: 0.01em;
 }
 
@@ -357,8 +412,8 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--ink);
+  border: 1px solid var(--ink-line);
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 0.82rem;
@@ -366,7 +421,7 @@ button:disabled {
 }
 
 .checkbox-list input {
-  accent-color: var(--accent);
+  accent-color: var(--ember);
 }
 
 .phrase-item .phrase-actions {
@@ -380,8 +435,8 @@ button:disabled {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: var(--surface-raised);
-  color: var(--text-dim);
+  background: var(--ink-raised-2);
+  color: var(--ash);
   font-size: 0.9rem;
   padding: 0;
   display: flex;
@@ -395,9 +450,44 @@ button:disabled {
 
 .empty-state {
   text-align: center;
-  color: var(--text-dim);
+  color: var(--ash);
   padding: 24px 8px;
   font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Inline edit form (replaces a phrase-item's body when editing) */
+.phrase-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phrase-edit-form textarea,
+.phrase-edit-form input[type="text"] {
+  width: 100%;
+  background: var(--ink);
+  border: 1px solid var(--ink-line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--parchment);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.phrase-edit-form textarea {
+  font-family: var(--font-quote);
+  resize: vertical;
+}
+
+.phrase-edit-form textarea:focus,
+.phrase-edit-form input[type="text"]:focus {
+  outline: none;
+  border-color: var(--ember);
+}
+
+.phrase-edit-form .btn-row {
+  margin-top: 2px;
 }
 
 .toast {
@@ -405,20 +495,18 @@ button:disabled {
   bottom: calc(84px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%) translateY(12px);
-  background: var(--surface-raised);
-  color: var(--text);
+  background: var(--ink-raised-2);
+  color: var(--parchment);
   padding: 10px 18px;
-  border-radius: 999px;
+  border-radius: 14px;
   font-size: 0.85rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 50;
-  max-width: 90vw;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: min(90vw, 400px);
+  text-align: center;
 }
 
 .toast.show {
@@ -432,8 +520,8 @@ nav.tabbar {
   left: 0;
   right: 0;
   display: flex;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
+  background: var(--ink-raised);
+  border-top: 1px solid var(--ink-line);
   padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
   z-index: 40;
 }
@@ -442,12 +530,13 @@ nav.tabbar button {
   background: none;
   width: auto;
   flex: 1;
-  color: var(--text-dim);
+  color: var(--ash);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
   font-weight: 500;
   padding: 6px 4px;
   border-radius: 10px;
@@ -458,22 +547,23 @@ nav.tabbar button .tab-icon {
 }
 
 nav.tabbar button.active {
-  color: var(--accent-light);
+  color: var(--ember);
 }
 
 .hint {
   font-size: 0.78rem;
-  color: var(--text-dim);
-  line-height: 1.4;
+  color: var(--ash);
+  line-height: 1.45;
 }
 
 .phrase-preview {
-  font-size: 1.05rem;
+  font-family: var(--font-quote);
+  font-size: 1.1rem;
   font-style: italic;
-  line-height: 1.5;
+  line-height: 1.55;
   padding: 4px 0 12px;
 }
 
 a {
-  color: var(--accent-light);
+  color: var(--ember);
 }

@@ -12,9 +12,9 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-BACKGROUND = "#1E3A5F"  # matches manifest.json background_color
-ACCENT = "#2E86AB"      # matches manifest.json theme_color
-LINE = "#F4F7FA"
+BACKGROUND = "#15120F"  # matches manifest.json background_color
+ACCENT = "#FF6B4A"      # matches manifest.json theme_color
+LINE = "#F3EADB"
 
 OUT_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "icons"
 

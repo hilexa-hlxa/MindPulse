@@ -240,7 +240,9 @@ async function loadDashboard() {
 
     const schedulerPill = document.getElementById("scheduler-pill");
     schedulerPill.textContent = settings.is_running ? "Running" : "Paused";
-    schedulerPill.className = `pill ${settings.is_running ? "on" : "off"}`;
+    // The one signature animation in the app: a live pulse only while the
+    // scheduler is actually running — it's a status indicator, not decor.
+    schedulerPill.className = `pill ${settings.is_running ? "on pulse" : "off"}`;
   } catch (err) {
     console.error(err);
   }
@@ -293,66 +295,110 @@ async function triggerNow() {
 // Phrases list
 // ---------------------------------------------------------------------
 
+let editingPhraseId = null;
+
 function renderPhrases() {
   const list = document.getElementById("phrase-list");
   if (cachedPhrases.length === 0) {
-    list.innerHTML = '<div class="empty-state">No phrases yet. Add your first one in the Add tab.</div>';
+    list.innerHTML = '<div class="empty-state">No phrases yet — add your first one in the Add tab.</div>';
     return;
   }
 
   list.innerHTML = "";
   for (const phrase of cachedPhrases) {
-    const item = document.createElement("div");
-    item.className = `phrase-item${phrase.is_active ? "" : " inactive"}`;
-    item.dataset.id = phrase.id;
+    list.appendChild(buildPhraseItem(phrase));
+  }
+}
 
-    item.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" ${phrase.is_active ? "checked" : ""} class="toggle-active" />
-        <span class="slider"></span>
-      </label>
-      <div class="phrase-body">
-        <div class="phrase-text" spellcheck="false">${escapeHtml(phrase.text)}</div>
-        <div class="phrase-meta">${phrase.author ? escapeHtml(phrase.author) + " · " : ""}sent ${phrase.times_sent}×</div>
-        ${phrase.categories.length ? `<div class="chip-row">${phrase.categories.map((c) => `<span class="chip">${escapeHtml(c)}</span>`).join("")}</div>` : ""}
+function buildPhraseItem(phrase) {
+  const item = document.createElement("div");
+  item.className = `phrase-item${phrase.is_active ? "" : " inactive"}`;
+  item.dataset.id = phrase.id;
+
+  if (editingPhraseId === phrase.id) {
+    renderPhraseEditForm(item, phrase);
+  } else {
+    renderPhraseView(item, phrase);
+  }
+  return item;
+}
+
+function renderPhraseView(item, phrase) {
+  item.innerHTML = `
+    <label class="switch">
+      <input type="checkbox" ${phrase.is_active ? "checked" : ""} class="toggle-active" aria-label="${phrase.is_active ? "Deactivate" : "Activate"} this phrase" />
+      <span class="slider"></span>
+    </label>
+    <div class="phrase-body">
+      <div class="phrase-text">${escapeHtml(phrase.text)}</div>
+      <div class="phrase-meta">${phrase.author ? escapeHtml(phrase.author) + " · " : ""}sent ${phrase.times_sent}×</div>
+      ${phrase.categories.length ? `<div class="chip-row">${phrase.categories.map((c) => `<span class="chip">${escapeHtml(c)}</span>`).join("")}</div>` : ""}
+    </div>
+    <div class="phrase-actions">
+      <button class="icon-btn edit-btn" title="Edit" aria-label="Edit this phrase">✏️</button>
+      <button class="icon-btn danger delete-btn" title="Delete" aria-label="Delete this phrase">🗑️</button>
+    </div>
+  `;
+
+  item.querySelector(".toggle-active").addEventListener("change", (e) => togglePhraseActive(phrase.id, e.target.checked));
+  item.querySelector(".edit-btn").addEventListener("click", () => {
+    editingPhraseId = phrase.id;
+    renderPhraseEditForm(item, phrase);
+    item.querySelector(".edit-text").focus();
+  });
+  item.querySelector(".delete-btn").addEventListener("click", () => deletePhrase(phrase.id));
+}
+
+function renderPhraseEditForm(item, phrase) {
+  item.innerHTML = `
+    <div class="phrase-edit-form" style="flex: 1;">
+      <textarea class="edit-text" rows="2" maxlength="500" aria-label="Phrase text">${escapeHtml(phrase.text)}</textarea>
+      <input type="text" class="edit-author" maxlength="120" placeholder="Author (optional)" value="${escapeHtml(phrase.author || "")}" aria-label="Author" />
+      <input type="text" class="edit-categories" placeholder="Categories, comma-separated" value="${escapeHtml(phrase.categories.join(", "))}" aria-label="Categories" />
+      <div class="btn-row">
+        <button type="button" class="btn-secondary btn-small cancel-edit-btn">Cancel</button>
+        <button type="button" class="btn-primary btn-small save-edit-btn">Save</button>
       </div>
-      <div class="phrase-actions">
-        <button class="icon-btn edit-btn" title="Edit">✏️</button>
-        <button class="icon-btn danger delete-btn" title="Delete">🗑️</button>
-      </div>
-    `;
+    </div>
+  `;
 
-    const textEl = item.querySelector(".phrase-text");
-    const editBtn = item.querySelector(".edit-btn");
-    const deleteBtn = item.querySelector(".delete-btn");
-    const toggleEl = item.querySelector(".toggle-active");
+  const cancel = () => {
+    editingPhraseId = null;
+    renderPhraseView(item, phrase);
+  };
 
-    toggleEl.addEventListener("change", () => togglePhraseActive(phrase.id, toggleEl.checked));
+  item.querySelector(".cancel-edit-btn").addEventListener("click", cancel);
+  item.querySelector(".save-edit-btn").addEventListener("click", () => savePhraseEdit(item, phrase));
+  item.querySelector(".edit-text").addEventListener("keydown", (e) => {
+    if (e.key === "Escape") cancel();
+  });
+}
 
-    editBtn.addEventListener("click", () => {
-      const editing = textEl.getAttribute("contenteditable") === "true";
-      if (editing) {
-        commitPhraseEdit(phrase.id, textEl);
-      } else {
-        textEl.setAttribute("contenteditable", "true");
-        textEl.focus();
-        editBtn.textContent = "💾";
-      }
+async function savePhraseEdit(item, phrase) {
+  const text = item.querySelector(".edit-text").value.trim();
+  const author = item.querySelector(".edit-author").value.trim();
+  const categories = parseCategoriesInput(item.querySelector(".edit-categories").value);
+
+  if (!text) {
+    toast("Phrase text can't be empty.");
+    return;
+  }
+
+  const saveBtn = item.querySelector(".save-edit-btn");
+  saveBtn.disabled = true;
+  try {
+    const updated = await apiRequest(`/phrases/${phrase.id}`, {
+      method: "PATCH",
+      body: { text, author: author || null, categories },
     });
-
-    textEl.addEventListener("blur", () => {
-      if (textEl.getAttribute("contenteditable") === "true") commitPhraseEdit(phrase.id, textEl);
-    });
-    textEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        textEl.blur();
-      }
-    });
-
-    deleteBtn.addEventListener("click", () => deletePhrase(phrase.id));
-
-    list.appendChild(item);
+    Object.assign(phrase, updated);
+    editingPhraseId = null;
+    renderPhraseView(item, phrase);
+    toast("Phrase updated.");
+  } catch (err) {
+    toast("Couldn't save edit.");
+    console.error(err);
+    saveBtn.disabled = false;
   }
 }
 
@@ -382,30 +428,6 @@ async function togglePhraseActive(id, isActive) {
     toast("Update failed.");
     console.error(err);
     loadPhrases();
-  }
-}
-
-async function commitPhraseEdit(id, textEl) {
-  textEl.removeAttribute("contenteditable");
-  const item = textEl.closest(".phrase-item");
-  const editBtn = item.querySelector(".edit-btn");
-  editBtn.textContent = "✏️";
-
-  const newText = textEl.textContent.trim();
-  const phrase = cachedPhrases.find((p) => p.id === id);
-  if (!newText || !phrase || newText === phrase.text) {
-    if (phrase) textEl.textContent = phrase.text;
-    return;
-  }
-
-  try {
-    const updated = await apiRequest(`/phrases/${id}`, { method: "PATCH", body: { text: newText } });
-    phrase.text = updated.text;
-    toast("Phrase updated.");
-  } catch (err) {
-    toast("Couldn't save edit.");
-    console.error(err);
-    textEl.textContent = phrase.text;
   }
 }
 

@@ -52,6 +52,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   whole collection against a live server (`npx @usebruno/cli run`),
   not just hand-written and assumed correct.
 - `CHANGELOG.md` (this file).
+- **Visual redesign**: replaced the generic dark-navy-plus-teal-accent
+  palette with a deliberate one — warm ink background, ember/coral
+  accent, a serif face for the phrases themselves (they're quotes) paired
+  with a monospace face for chrome/labels/stats (nods to the developer
+  audience). One signature element: the scheduler's status dot is a real
+  pulsing ring while running, not a static dot — because that's literally
+  what the product does, not decoration. App icons regenerated to match.
+- **Inline phrase editing now covers author and categories**, not just
+  text — the old contenteditable-text-only flow gave no way to change a
+  phrase's author or tags after creation. Edit now opens a small form
+  (text/author/categories + Save/Cancel) that PATCHes all three together.
+- Keyboard focus styling (`:focus-visible`) and `aria-label`s on every
+  icon-only control (edit/delete/toggle), previously relying on nothing
+  but a `title` tooltip.
 
 ### Fixed
 - `PATCH /api/settings` with `category_filter` was silently ignored in

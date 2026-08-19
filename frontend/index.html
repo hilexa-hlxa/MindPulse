@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>MindPulse</title>
   <meta name="description" content="Scheduled motivational push notifications, delivered like a native app." />
-  <meta name="theme-color" content="#2E86AB" />
+  <meta name="theme-color" content="#FF6B4A" />
   <!-- iOS Safari ignores manifest.json's `display: standalone` unless these
        are also present, and never fires `beforeinstallprompt` at all —
        see the manual "Add to Home Screen" hint in app.js. -->
@@ -135,9 +135,9 @@
       <div class="card">
         <h2>Scheduler</h2>
         <div class="toggle-row">
-          <span>Notifications running</span>
+          <span id="running-label">Notifications running</span>
           <label class="switch">
-            <input id="settings-running" type="checkbox" checked />
+            <input id="settings-running" type="checkbox" checked aria-labelledby="running-label" />
             <span class="slider"></span>
           </label>
         </div>
