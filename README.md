@@ -273,6 +273,12 @@ at `/docs`, or explore them hands-on with the [Bruno collection](#7-try-the-api-
 
 ## Deployment (Render or Railway free tier)
 
+> For the full walkthrough — database setup, env vars, the exact gotchas
+> we hit deploying this (Railway's entrypoint auto-detection, Vercel Root
+> Directory, SQLite-in-production footguns) and how to verify a deploy
+> actually worked — see **[DEPLOYMENT.md](DEPLOYMENT.md)**. The steps
+> below are the short version.
+
 1. Push this repo to GitHub.
 2. **Render:** New → Blueprint → point at the repo (`render.yaml` is picked
    up automatically) → set the `VAPID_*` and `ALLOWED_ORIGINS` env vars in
