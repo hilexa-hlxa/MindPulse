@@ -8,10 +8,14 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: alembic upgrade head && uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
+      # External Postgres (e.g. Supabase's Session pooler, port 5432 — not
+      # the Transaction pooler on 6543, which breaks asyncpg's prepared
+      # statements). Render's own free-tier Postgres is capped at one per
+      # account, so this app deliberately doesn't provision one via a
+      # `databases:` block — set the connection string by hand in the
+      # dashboard instead.
       - key: DATABASE_URL
-        fromDatabase:
-          name: mindpulse-db
-          property: connectionString
+        sync: false
       - key: VAPID_PRIVATE_KEY
         sync: false
       - key: VAPID_PUBLIC_KEY
@@ -24,8 +28,3 @@ services:
         value: production
       - key: PYTHON_VERSION
         value: 3.12.4
-
-databases:
-  - name: mindpulse-db
-    plan: free
-    postgresMajorVersion: 16
