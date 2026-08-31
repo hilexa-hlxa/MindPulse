@@ -114,6 +114,12 @@ check("nothing is ever put in the narrow title field", () => {
   });
 });
 
+check("a note on a phrase never reaches the narrow title field", () => {
+  const out = Pulse.splitForNotification({ text: "the words that matter", note: "smuggled" });
+  assert(out.title === "MindPulse", `a note reached the title: ${out.title}`);
+  assert(out.body === "the words that matter", "the phrase must still be the body");
+});
+
 check("the longest phrase the app accepts still arrives whole", () => {
   const max = "x".repeat(120);   // the composer's cap
   assert(Pulse.splitForNotification({ text: max, note: "" }).body === max,
@@ -187,16 +193,27 @@ check("with Advanced Mode on only this window's phrases are eligible", () => {
   assert(idsOf(Pulse.eligible(mixed, at(21, 0), advanced)) === "e,any,legacy", "evening pool wrong");
 });
 
-check("outside every window only anytime phrases can be sent", () => {
-  assert(idsOf(Pulse.eligible(mixed, at(3, 0), advanced)) === "any,legacy",
-    "the small hours should leave only anytime phrases");
+check("nothing is sent outside the windows at all", () => {
+  // Treating the small hours as an anytime window left a pool of one on a
+  // thin library, and a pool of one repeats — seven identical notifications
+  // in a row in simulation, which is the exact thing the bag exists to stop.
+  // Nobody wants a 3am pulse either, so the small hours deliver nothing.
+  [[0, 0], [3, 0], [5, 59]].forEach(([h, m]) => {
+    assert(Pulse.eligible(mixed, at(h, m), advanced).length === 0,
+      `${h}:${m} should send nothing, got ${idsOf(Pulse.eligible(mixed, at(h, m), advanced))}`);
+  });
+});
+
+check("the small hours are quiet only in Advanced Mode", () => {
+  assert(Pulse.eligible(mixed, at(3, 0), plain).length === 5,
+    "with Advanced Mode off, 3am is an hour like any other");
 });
 
 check("existing phrases keep working when Advanced Mode is switched on", () => {
   // Nobody who turns this on has categorised anything yet. If that silenced
   // the app it would look broken, so an uncategorised library stays whole.
   const legacyOnly = [{ id: "1", text: "a" }, { id: "2", text: "b" }];
-  [3, 8, 14, 21].forEach((h) => {
+  [8, 14, 21].forEach((h) => {
     assert(Pulse.eligible(legacyOnly, at(h, 0), advanced).length === 2,
       `an uncategorised library went quiet at ${h}:00`);
   });

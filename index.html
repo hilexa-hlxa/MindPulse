@@ -122,12 +122,25 @@
     </form>
     <p class="counter" id="counter" aria-live="polite"></p>
 
+    <div class="chips chips--filter" id="list-filter" hidden role="group" aria-label="Show phrases for"></div>
+
     <ul class="list" id="list"></ul>
 
     <p class="empty" id="empty">
       Your phrases live only on this device. Write the first one above and the
       rhythm starts.
     </p>
+  </section>
+
+  <!-- Sixty pulses were already being kept; until now only the newest was
+       ever shown. -->
+  <section class="recent" id="recent" aria-labelledby="recent-label" hidden>
+    <div class="head">
+      <h2 class="eyebrow" id="recent-label">Recently sent</h2>
+      <p class="tally" id="recent-tally"></p>
+    </div>
+    <ol class="recent__list" id="recent-list"></ol>
+    <button class="linkbtn" id="recent-more" type="button" hidden>Show more</button>
   </section>
 
   <footer class="foot">

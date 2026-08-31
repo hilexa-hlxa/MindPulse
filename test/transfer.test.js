@@ -128,14 +128,48 @@ check("long phrases from an older export are not silently cut", () => {
   assert(r.phrases[0].text.length === 300, `import truncated a phrase to ${r.phrases[0].text.length}`);
 });
 
+check("a phrase keeps the part of the day it was pinned to", () => {
+  const got = Transfer.parse(JSON.stringify([
+    { text: "morning one", window: "morning" },
+    { text: "evening one", window: "evening" },
+    { text: "uncategorised" },
+    { text: "nonsense", window: "teatime" },
+  ]));
+  assert(got.map((p) => p.window).join() === "morning,evening,anytime,anytime",
+    `windows lost or mangled: ${JSON.stringify(got.map((p) => p.window))}`);
+});
+
+check("an imported phrase arrives in the list still pinned", () => {
+  const r = Transfer.merge([], Transfer.parse(JSON.stringify([{ text: "x", window: "evening" }])), counter(), 2000);
+  assert(r.phrases[0].window === "evening", `category dropped on merge: ${JSON.stringify(r.phrases[0])}`);
+});
+
+// --- settings -----------------------------------------------------------
+
+check("the settings an export carries are read back", () => {
+  const raw = JSON.stringify(Transfer.exportPayload(
+    { phrases: [], settings: { intervalMs: 900000, advanced: true } }, "2026-01-01T00:00:00.000Z"));
+  const got = Transfer.parse(raw);
+  assert(got.settings && got.settings.intervalMs === 900000, `settings lost: ${JSON.stringify(got.settings)}`);
+  assert(got.settings.advanced === true, "advanced flag lost");
+});
+
+check("a file with no settings block reads as none rather than failing", () => {
+  const got = Transfer.parse(JSON.stringify(["just", "phrases"]));
+  assert(got.settings === null, `expected null settings, got ${JSON.stringify(got.settings)}`);
+  assert(got.length === 2, "phrases should still parse");
+});
+
 // --- round trip ---------------------------------------------------------
 
 check("export then import into an empty list restores the same phrases", () => {
-  const mine = [phrase("one"), phrase("two", { muted: true })];
+  const mine = [phrase("one", { window: "morning" }), phrase("two", { muted: true, window: "evening" })];
   const raw = JSON.stringify(Transfer.exportPayload({ phrases: mine, settings: { intervalMs: 900000 } }, "2026-01-01T00:00:00.000Z"));
   const r = Transfer.merge([], Transfer.parse(raw), counter(), 2000);
   assert(texts(r.phrases).join() === "one,two", `got ${JSON.stringify(texts(r.phrases))}`);
   assert(r.phrases[1].muted === true, "muted state lost on the round trip");
+  assert(r.phrases[0].window === "morning" && r.phrases[1].window === "evening",
+    `categories lost on the round trip: ${JSON.stringify(r.phrases.map((p) => p.window))}`);
 });
 
 check("export then import into the same list adds nothing", () => {

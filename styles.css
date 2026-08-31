@@ -291,7 +291,7 @@ body {
 
 /* --- shared section furniture -------------------------------------------- */
 
-.deck, .mode, .rhythm, .library {
+.deck, .mode, .rhythm, .library, .recent {
   margin-top: 26px;
   padding-top: 22px;
   border-top: 1px solid var(--etch);
@@ -395,6 +395,46 @@ body {
 }
 
 .row__window[data-window="anytime"] { opacity: 0.55; }
+
+/* --- recently sent ------------------------------------------------------- */
+
+.recent__list { list-style: none; margin: 0; padding: 0; }
+
+.recent__row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--etch);
+}
+
+.recent__row:last-child { border-bottom: none; }
+
+.recent__text {
+  margin: 0;
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--bone);
+  overflow-wrap: anywhere;
+}
+
+.recent__when {
+  flex: none;
+  font-family: var(--signal);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A pulse you asked for by hand reads differently from one the clock sent. */
+.recent__row[data-reason="manual"] .recent__when { color: var(--amber); opacity: 0.75; }
+
+#recent-more { margin-top: 12px; }
+
+.chips--filter { margin-bottom: 13px; }
 
 /* --- rhythm -------------------------------------------------------------- */
 

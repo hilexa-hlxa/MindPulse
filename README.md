@@ -60,12 +60,20 @@ together when the cycle turns over.
 
 Delivery is done by your device, not by a server.
 
-- Pulses arrive whenever MindPulse is open, including in a background tab.
+- Pulses arrive on your rhythm whenever MindPulse is open, including in a
+  background tab.
 - If one came due while the app was closed, it is delivered when you come
   back — once, not once for every hour you were away.
 - Installed to your home screen, Chrome may also deliver while the app is
-  closed, through Periodic Background Sync. Browsers grant this sparingly, so
-  treat it as a bonus rather than a guarantee.
+  closed, through Periodic Background Sync.
+
+Be clear-eyed about that last one. Chrome grants Periodic Background Sync
+sparingly and throttles it to roughly twelve hours between runs, whatever
+interval you chose; Safari does not implement it at all, so on an iPhone a
+closed MindPulse sends nothing. Delivering on your actual rhythm with the app
+closed needs a push server, and this version deliberately has no server. So:
+MindPulse keeps your rhythm while it is open, and catches you up when you
+return. Anything that arrives while it is closed is a bonus.
 
 **Hold pulses overnight** pauses delivery between the two times you choose, and
 picks up again when the window lifts.
@@ -92,8 +100,12 @@ Anytime is the default, which is what lets a library written before any of this
 existed keep working the moment the switch is flipped: an uncategorised phrase
 is an Anytime phrase, and Anytime fits everywhere.
 
-The small hours belong to no window. Between midnight and 06:00 only Anytime
-phrases are sent — and by default the overnight hold covers most of that anyway.
+The small hours belong to no window, and nothing is sent between midnight and
+06:00. Letting Anytime phrases fill that stretch was the first design, and it
+was wrong: on a small library it leaves a pool of one, and a pool of one
+repeats — seven identical notifications in a row, in simulation. Holding until
+06:00 costs nothing anyone wanted at 4am and keeps the promise the app is
+built on.
 
 If nothing suits the current hour, MindPulse holds rather than sending
 something from the wrong window, and says so on screen. The next pulse lands as
@@ -124,6 +136,11 @@ the full phrase is set large with no limit at all.
 - Muting a phrase keeps it in your list but takes it out of the rotation.
 - **Export** writes your phrases to a JSON file; **Import** adds back anything
   from such a file that you do not already have, and leaves the rest alone.
+  Categories travel with the phrases. Your interval and quiet hours are in the
+  file too, but they are only restored into an empty app — importing into a
+  library you are already using must not quietly reset how it behaves.
+- **Recently sent** lists the last pulses, newest first; ones you asked for
+  with **Pulse now** are marked apart from the ones the clock sent.
 
 ## Tests
 
@@ -131,6 +148,9 @@ the full phrase is set large with no limit at all.
 npm test          # or run any one on its own: node test/bag.test.js
 ```
 
+`test/schedule.test.js` covers the decisions that actually put a notification
+on screen — which phrase `fire()` draws, and when `tick()` delivers, holds, or
+waits — against a fake store, with no IndexedDB or DOM involved.
 `test/bag.test.js` checks the guarantees the shuffle bag makes — full coverage
 per cycle, no back-to-back repeats across cycle boundaries, uniform delivery
 over many cycles, and correct behaviour when the phrase list is edited
@@ -150,6 +170,7 @@ lib/bag.js              the shuffle bag
 lib/pulse.js            deciding when to send, what suits the hour, and sending
 lib/idb.js              key/value storage on IndexedDB
 lib/transfer.js         reading and writing export files
+test/                   four suites, run by `npm test`
 sw.js                   offline shell, background delivery, notification taps
 ```
 

@@ -35,6 +35,7 @@
    "timer-label", "countdown", "rail", "pulse-now", "toggle-pause", "deck", "deck-tally",
    "intervals", "quiet-on", "quiet-times", "quiet-from", "quiet-to", "library-tally",
    "mode-window", "mode-note", "advanced-on", "composer-windows",
+   "list-filter", "recent", "recent-tally", "recent-list", "recent-more",
    "composer", "composer-input", "counter", "list", "empty", "delivery-note", "export", "import",
    "import-file", "toast"].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -48,6 +49,11 @@
   // person had stopped thinking about.
   var composerWindow = "anytime";
   var DEFAULT_PLACEHOLDER = "Write a phrase worth hearing again";
+  // Which window the phrase list is filtered to; "all" shows everything.
+  var listFilter = "all";
+  // How many past pulses are on screen. Sixty are kept.
+  var RECENT_STEP = 8;
+  var recentShown = RECENT_STEP;
   var lastRemaining = null;
   var lastDeliveredAt = null;
   var ticking = false;
@@ -362,17 +368,89 @@
     el["quiet-to"].value = quiet.to;
   }
 
+  function renderFilter() {
+    var on = !!state.settings.advanced;
+    el["list-filter"].hidden = !on;
+    if (!on) { listFilter = "all"; return; }
+
+    var counts = {};
+    (state.phrases || []).forEach(function (p) {
+      var w = Pulse.phraseWindow(p);
+      counts[w] = (counts[w] || 0) + 1;
+    });
+
+    el["list-filter"].innerHTML = "";
+    var options = [{ id: "all", label: "All" }].concat(Pulse.WINDOWS.map(function (w) {
+      return { id: w.id, label: w.label, count: counts[w.id] || 0 };
+    }));
+
+    options.forEach(function (option) {
+      // A window you have written nothing for is noise in a filter row.
+      if (option.id !== "all" && !option.count && listFilter !== option.id) return;
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip chip--window";
+      chip.textContent = option.id === "all"
+        ? "All"
+        : option.label + " " + option.count;
+      chip.setAttribute("aria-pressed", String(listFilter === option.id));
+      chip.addEventListener("click", function () {
+        listFilter = option.id;
+        render();
+      });
+      el["list-filter"].appendChild(chip);
+    });
+  }
+
+  /** The past pulses, newest first. */
+  function renderRecent() {
+    var history = state.history || [];
+    el.recent.hidden = !history.length;
+    if (!history.length) return;
+
+    var shown = history.slice(0, recentShown);
+    el["recent-tally"].textContent = history.length === 1 ? "1 pulse" : history.length + " pulses";
+    el["recent-list"].innerHTML = "";
+
+    shown.forEach(function (entry) {
+      var li = document.createElement("li");
+      li.className = "recent__row";
+      li.dataset.reason = entry.reason || "scheduled";
+
+      var text = document.createElement("p");
+      text.className = "recent__text";
+      text.textContent = entry.text;
+
+      var when = document.createElement("span");
+      when.className = "recent__when";
+      when.textContent = formatAgo(entry.at);
+
+      li.append(text, when);
+      el["recent-list"].appendChild(li);
+    });
+
+    el["recent-more"].hidden = history.length <= recentShown;
+    el["recent-more"].textContent = "Show " + Math.min(RECENT_STEP, history.length - recentShown) + " more";
+  }
+
   function renderLibrary() {
     // The scheduler refreshes the screen every 25 seconds. Rebuilding the
     // list under an open editor would throw away what is being typed, so
     // leave it standing until the edit is saved or cancelled.
     if (editingId !== null && el.list.querySelector(".row__edit")) return;
 
-    var phrases = state.phrases || [];
+    var all = state.phrases || [];
+    var phrases = listFilter === "all"
+      ? all
+      : all.filter(function (p) { return Pulse.phraseWindow(p) === listFilter; });
     var pending = pendingSet();
 
-    el["library-tally"].textContent = String(phrases.length);
-    el.empty.hidden = phrases.length > 0;
+    el["library-tally"].textContent = listFilter === "all"
+      ? String(all.length)
+      : phrases.length + " of " + all.length;
+    // The empty state invites a first phrase; that is only true of a genuinely
+    // empty library, not of a filter that happens to match nothing.
+    el.empty.hidden = all.length > 0;
     el.list.innerHTML = "";
 
     phrases.forEach(function (phrase) {
@@ -492,11 +570,25 @@
     return wrap;
   }
 
+  /**
+   * What the app can honestly promise about delivery on this device.
+   *
+   * The old wording said an installed app "can deliver while it's closed too",
+   * which reads as "your rhythm keeps running". It does not. Periodic
+   * Background Sync is granted sparingly and throttled to something like
+   * twelve hours between runs, so a closed app delivers occasionally at the
+   * browser's convenience, not every 15 minutes because you asked for that.
+   * On iOS the API does not exist at all. Better to say so than to let someone
+   * install this expecting an alarm clock.
+   */
   function renderDeliveryNote() {
     var background = "serviceWorker" in navigator && "PeriodicSyncManager" in self;
-    el["delivery-note"].textContent =
-      "Your phrases never leave this device. Pulses arrive while MindPulse is open, including in a background tab, and anything missed is delivered when you come back." +
-      (background ? " Installed to your home screen, this browser can deliver while it's closed too." : "");
+    var open = "Your phrases never leave this device. Pulses arrive on your rhythm while MindPulse is open, " +
+      "including in a background tab, and anything missed is delivered when you come back.";
+    el["delivery-note"].textContent = open + " " + (background
+      ? "Installed to your home screen, this browser may also deliver the occasional pulse while the app is " +
+        "closed — the browser decides how often, and it is far less often than your interval, so treat it as a bonus."
+      : "While the app is closed this browser sends nothing, so keep a tab open if you want the rhythm kept.");
   }
 
   function render() {
@@ -508,7 +600,9 @@
     renderMode();
     renderComposer();
     renderRhythm();
+    renderFilter();
     renderLibrary();
+    renderRecent();
     paintClock(Date.now());
   }
 
@@ -603,11 +697,23 @@
   /** Import adds what's missing and leaves what's already here alone. */
   function importPhrases(file) {
     file.text().then(function (raw) {
-      var result = Transfer.merge(state.phrases, Transfer.parse(raw), newId, Date.now());
+      var incoming = Transfer.parse(raw);
+      var result = Transfer.merge(state.phrases, incoming, newId, Date.now());
+
+      // An export carries the rhythm it was written under. Restoring that onto
+      // a library you are already using would silently reset your interval and
+      // quiet hours, which import has no business doing — so settings come
+      // back only when there is nothing here to disturb.
+      var restoring = incoming.settings && !(state.phrases || []).length;
+
       if (!result.added.length) { toast("Nothing new to add — those phrases are already here."); return; }
-      return savePhrases(result.phrases).then(function () {
-        toast("Added " + result.added.length + (result.added.length === 1 ? " phrase." : " phrases."));
-      });
+
+      return savePhrases(result.phrases)
+        .then(function () { return restoring ? saveSettings(incoming.settings) : null; })
+        .then(function () {
+          toast("Added " + result.added.length + (result.added.length === 1 ? " phrase." : " phrases.") +
+            (restoring ? " Settings restored too." : ""));
+        });
     }).catch(function () {
       toast("That file isn't a MindPulse export.");
     });
@@ -692,6 +798,11 @@
       quiet[id === "quiet-from" ? "from" : "to"] = this.value;
       saveSettings({ quiet: quiet });
     });
+  });
+
+  el["recent-more"].addEventListener("click", function () {
+    recentShown += RECENT_STEP;
+    renderRecent();
   });
 
   el.export.addEventListener("click", exportPhrases);
