@@ -80,5 +80,40 @@ check("with no quiet window the interval is the whole rule", () => {
   assert(next === at(0, 0, 11).getTime(), "expected midnight, got " + new Date(next));
 });
 
+check("a short phrase stays the notification headline", () => {
+  const short = "Start badly. Fix it later.";
+  const out = Pulse.splitForNotification({ text: short, note: "" });
+  assert(out.title === short, "short phrase should be the whole title");
+  assert(out.body === "MindPulse", "short phrase should leave the body as the app name");
+});
+
+check("a long phrase is carried in full by the body", () => {
+  const long = "The mood follows the action rather than the other way round, so the "
+    + "way out is to start moving before you feel like starting at all.";
+  const out = Pulse.splitForNotification({ text: long, note: "" });
+  assert(out.body === long, "the body must carry the complete phrase");
+  assert(out.title.length < long.length, "the title should be a lead, not the whole thing");
+  assert(out.title.endsWith("\u2026"), "a clipped title should show an ellipsis");
+  assert(long.startsWith(out.title.slice(0, -1)), "the title should lead with the phrase's own words");
+});
+
+check("a clipped title never breaks mid-word", () => {
+  const long = "Nobody is thinking about your mistakes anywhere near as much as you are, "
+    + "and most of them have forgotten already.";
+  const title = Pulse.splitForNotification({ text: long, note: "" }).title;
+  const lead = title.slice(0, -1);
+  assert(!/[\s,;:.!?-]$/.test(lead), "trailing punctuation should be trimmed: " + JSON.stringify(lead));
+  assert(long.startsWith(lead), "the lead should be a literal prefix of the phrase");
+  // Whatever follows the lead must not be a letter, or a word was split.
+  const nextChar = long.charAt(lead.length);
+  assert(!/[A-Za-z0-9]/.test(nextChar), "clipped mid-word: " + JSON.stringify(lead + "|" + nextChar));
+});
+
+check("the longest phrase the app accepts still arrives whole", () => {
+  const max = "x".repeat(240);
+  const out = Pulse.splitForNotification({ text: max, note: "" });
+  assert(out.body === max, "a 240-character phrase must survive intact in the body");
+});
+
 console.log(failures ? `\n${failures} failing` : "\nall passing");
 process.exit(failures ? 1 : 0);
