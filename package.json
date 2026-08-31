@@ -1,0 +1,11 @@
+{
+  "name": "mindpulse",
+  "version": "2.0.0",
+  "description": "Your own phrases, dealt back to you one at a time on a rhythm you set.",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "node test/bag.test.js && node test/pulse.test.js",
+    "start": "python3 -m http.server 8123"
+  }
+}

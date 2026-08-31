@@ -1,0 +1,602 @@
+/* ============================================================================
+   MindPulse
+
+   The app is an instrument, not a dashboard: something is running in the
+   background on a rhythm, and the screen is where you read it off. So the
+   surface borrows from lab equipment — a deep slate-teal housing, a phosphor
+   green for the signal, amber reserved strictly for time, and the phrases
+   themselves set in monospace, because here they are a readout rather than a
+   pull quote. The signature is the deck: the shuffle bag drawn as tiles that
+   go dark one by one and all relight when the cycle turns over.
+   ========================================================================= */
+
+:root {
+  --vessel:      #0b1618;
+  --vessel-2:    #101f22;
+  --vessel-3:    #16292d;
+  --etch:        rgba(198, 236, 230, 0.10);
+  --etch-strong: rgba(198, 236, 230, 0.19);
+
+  --phosphor:     #5fe3b4;   /* the signal: live, undealt, primary action */
+  --phosphor-ink: #06231c;
+  --amber:        #ffb35c;   /* time, and only ever time */
+  --bone:         #e6f1ef;
+  --muted:        #7b9895;
+  --danger:       #ff8272;
+
+  --signal: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+            "Liberation Mono", monospace;
+  --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
+
+  --r: 12px;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+/* `hidden` has to beat the display set by a component class, or every panel
+   the app hides stays on screen. */
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background:
+    radial-gradient(115% 62% at 50% -12%, #16343a 0%, transparent 62%),
+    var(--vessel);
+  color: var(--bone);
+  font-family: var(--ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.frame {
+  max-width: 540px;
+  margin: 0 auto;
+  padding:
+    max(20px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-left))
+    calc(40px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-right));
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- masthead ------------------------------------------------------------ */
+
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.mark { width: 26px; height: 26px; color: var(--phosphor); flex: none; }
+
+.masthead h1 {
+  margin: 0;
+  font-family: var(--signal);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+}
+
+.status {
+  margin: 0 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--signal);
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.status__pip {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.status[data-state="live"]   { color: var(--phosphor); }
+.status[data-state="paused"] { color: var(--amber); }
+
+.status[data-state="live"] .status__pip {
+  animation: beat 2.6s ease-in-out infinite;
+}
+
+@keyframes beat {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(95, 227, 180, 0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(95, 227, 180, 0); }
+}
+
+/* --- notification permission --------------------------------------------- */
+
+.permit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 179, 92, 0.3);
+  border-radius: var(--r);
+  background: rgba(255, 179, 92, 0.07);
+}
+
+.permit__text { margin: 0; flex: 1 1 190px; font-size: 13.5px; color: #f3ddc2; }
+
+/* --- readout ------------------------------------------------------------- */
+
+.readout {
+  position: relative;
+  overflow: hidden;
+  padding: 20px 20px 18px;
+  border: 1px solid var(--etch);
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--vessel-2), #0d1a1d);
+  box-shadow: inset 0 1px 0 rgba(198, 236, 230, 0.05);
+}
+
+/* Scanlines: felt rather than seen — the housing, not a pattern. */
+.readout::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg, rgba(198, 236, 230, 0.028) 0 1px, transparent 1px 4px);
+}
+
+.readout > * { position: relative; }
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--signal);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.eyebrow__when::before { content: " · "; }
+
+.phrase {
+  margin: 14px 0 22px;
+  font-family: var(--signal);
+  font-size: clamp(19px, 5vw, 25px);
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+.phrase__placeholder { color: var(--muted); }
+
+.phrase.is-fresh { animation: arrive 420ms cubic-bezier(0.2, 0.7, 0.3, 1); }
+
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.timer { display: flex; align-items: baseline; gap: 10px; }
+
+.timer__label {
+  font-family: var(--signal);
+  font-size: 10.5px;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.timer__clock {
+  margin-left: auto;
+  font-family: var(--signal);
+  font-size: clamp(28px, 8vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--amber);
+}
+
+.rail {
+  height: 3px;
+  margin: 12px 0 18px;
+  border-radius: 2px;
+  background: var(--etch);
+  overflow: hidden;
+}
+
+.rail__fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 179, 92, 0.35), var(--amber));
+  transition: width 900ms linear;
+}
+
+.controls { display: flex; gap: 10px; }
+.controls .btn { flex: 1; }
+
+/* --- buttons ------------------------------------------------------------- */
+
+.btn {
+  appearance: none;
+  padding: 11px 16px;
+  border: 1px solid var(--etch-strong);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bone);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, transform 90ms ease;
+}
+
+.btn:hover { background: rgba(198, 236, 230, 0.06); border-color: var(--etch-strong); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+.btn--solid {
+  border-color: transparent;
+  background: var(--phosphor);
+  color: var(--phosphor-ink);
+  font-weight: 650;
+}
+
+.btn--solid:hover { background: #7aeac2; border-color: transparent; }
+
+.linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.linkbtn:hover { color: var(--bone); }
+
+/* --- shared section furniture -------------------------------------------- */
+
+.deck, .rhythm, .library {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--etch);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.tally {
+  margin: 0 0 0 auto;
+  font-family: var(--signal);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* --- the deck (signature) ------------------------------------------------ */
+
+.deck__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  flex: 1 1 16px;
+  max-width: 34px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid rgba(198, 236, 230, 0.07);
+  background: #0e1d20;
+  transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.tile.is-pending {
+  border-color: rgba(95, 227, 180, 0.85);
+  background: rgba(95, 227, 180, 0.34);
+  box-shadow: 0 0 12px rgba(95, 227, 180, 0.22);
+}
+
+/* The cycle turning over is the one moment worth animating: the whole deck
+   relights left to right, which is exactly what just happened underneath. */
+.tile.is-relit { animation: relight 460ms ease both; animation-delay: calc(var(--i) * 38ms); }
+
+@keyframes relight {
+  0%   { transform: scaleY(0.55); opacity: 0.25; }
+  55%  { transform: scaleY(1.06); opacity: 1; }
+  100% { transform: none; opacity: 1; }
+}
+
+.deck__tiles:empty::after {
+  content: "no phrases yet";
+  font-family: var(--signal);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* --- rhythm -------------------------------------------------------------- */
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+  appearance: none;
+  padding: 8px 13px;
+  border: 1px solid var(--etch-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--signal);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.chip:hover { color: var(--bone); }
+
+.chip[aria-pressed="true"] {
+  border-color: rgba(255, 179, 92, 0.6);
+  background: rgba(255, 179, 92, 0.12);
+  color: var(--amber);
+}
+
+.quiet { margin-top: 18px; }
+
+.switch { display: flex; align-items: center; gap: 11px; cursor: pointer; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.switch__track {
+  position: relative;
+  width: 40px; height: 23px;
+  border-radius: 999px;
+  border: 1px solid var(--etch-strong);
+  background: var(--vessel-3);
+  transition: background 160ms ease, border-color 160ms ease;
+  flex: none;
+}
+
+.switch__knob {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 160ms cubic-bezier(0.3, 0.7, 0.3, 1), background 160ms ease;
+}
+
+.switch input:checked + .switch__track {
+  background: rgba(255, 179, 92, 0.2);
+  border-color: rgba(255, 179, 92, 0.55);
+}
+
+.switch input:checked + .switch__track .switch__knob {
+  transform: translateX(17px);
+  background: var(--amber);
+}
+
+.switch input:focus-visible + .switch__track {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 2px;
+}
+
+.switch__label { font-size: 14px; }
+
+.quiet__times {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 13px 0 0 51px;
+  font-family: var(--signal);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.quiet__times input {
+  padding: 7px 9px;
+  border: 1px solid var(--etch-strong);
+  border-radius: 8px;
+  background: var(--vessel-3);
+  color: var(--amber);
+  font-family: var(--signal);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+/* --- library ------------------------------------------------------------- */
+
+.composer { display: flex; gap: 9px; align-items: flex-start; }
+
+.composer textarea {
+  flex: 1;
+  min-height: 44px;
+  padding: 12px 13px;
+  border: 1px solid var(--etch-strong);
+  border-radius: 10px;
+  background: var(--vessel-2);
+  color: var(--bone);
+  font-family: var(--signal);
+  font-size: 14px;
+  line-height: 1.45;
+  resize: none;
+  overflow: hidden;
+  transition: border-color 140ms ease;
+}
+
+.composer textarea::placeholder { color: var(--muted); font-family: var(--ui); }
+.composer textarea:focus { outline: none; border-color: rgba(95, 227, 180, 0.55); }
+.composer .btn { align-self: stretch; }
+
+.list { list-style: none; margin: 16px 0 0; padding: 0; }
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--etch);
+}
+
+.row:first-child { border-top: 1px solid var(--etch); }
+
+/* The same lit/dark language as the deck, so a row tells you at a glance
+   whether that phrase is still waiting in the current cycle. */
+.row__marker {
+  width: 9px; height: 9px;
+  margin-top: 7px;
+  border-radius: 3px;
+  border: 1px solid var(--etch-strong);
+  background: var(--vessel-3);
+  flex: none;
+}
+
+.row.is-pending .row__marker {
+  border-color: rgba(95, 227, 180, 0.6);
+  background: rgba(95, 227, 180, 0.4);
+}
+
+.row__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--signal);
+  font-size: 13.5px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.row.is-muted .row__text { color: var(--muted); text-decoration: line-through; }
+.row.is-muted .row__marker { opacity: 0.4; }
+
+.row__actions { display: flex; gap: 2px; flex: none; }
+
+.iconbtn {
+  width: 30px; height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.iconbtn:hover { color: var(--bone); background: rgba(198, 236, 230, 0.07); }
+.iconbtn[data-act="delete"]:hover { color: var(--danger); }
+.iconbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor;
+               stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.row__edit { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+
+.row__edit textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(95, 227, 180, 0.55);
+  border-radius: 9px;
+  background: var(--vessel-2);
+  color: var(--bone);
+  font-family: var(--signal);
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.row__edit textarea:focus { outline: none; }
+.row__edit-actions { display: flex; gap: 8px; }
+.row__edit-actions .btn { padding: 8px 14px; font-size: 13px; }
+
+.empty {
+  margin: 18px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* --- foot ---------------------------------------------------------------- */
+
+.foot {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--etch);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.foot p { margin: 0; font-size: 12px; line-height: 1.6; color: var(--muted); text-wrap: pretty; }
+.foot__actions { display: flex; gap: 16px; }
+
+/* --- toast --------------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + env(safe-area-inset-bottom));
+  transform: translate(-50%, 14px);
+  margin: 0;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 11px 16px;
+  border: 1px solid var(--etch-strong);
+  border-radius: 10px;
+  background: var(--vessel-3);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
+  font-size: 13.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease, transform 200ms ease;
+  z-index: 10;
+}
+
+.toast.is-shown { opacity: 1; transform: translate(-50%, 0); }
+
+/* --- motion preferences -------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

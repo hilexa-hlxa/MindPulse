@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MindPulse</title>
+<meta name="description" content="Your own phrases, dealt back to you one at a time on a rhythm you set.">
+<meta name="theme-color" content="#0B1618">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MindPulse">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="frame">
+
+  <header class="masthead">
+    <svg class="mark" viewBox="0 0 512 512" aria-hidden="true">
+      <path d="M86 292 H186 L224 150 L268 382 L302 292 H426" fill="none"
+            stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>MindPulse</h1>
+    <p class="status" id="status" data-state="off"><span class="status__pip"></span><span id="status-text">Off</span></p>
+  </header>
+
+  <!-- Notifications are the whole point, so this sits above everything until
+       it is dealt with, then never appears again. -->
+  <div class="permit" id="permit" hidden>
+    <p class="permit__text" id="permit-text"></p>
+    <button class="btn btn--solid" id="permit-btn" type="button">Turn on notifications</button>
+  </div>
+
+  <!-- The readout: what was last dealt, and how long until the next one. -->
+  <section class="readout" aria-labelledby="readout-label">
+    <h2 class="eyebrow" id="readout-label">Last pulse<span class="eyebrow__when" id="last-when"></span></h2>
+
+    <blockquote class="phrase" id="phrase">
+      <span class="phrase__placeholder">Nothing dealt yet.</span>
+    </blockquote>
+
+    <div class="timer">
+      <span class="timer__label" id="timer-label">Next pulse in</span>
+      <span class="timer__clock" id="countdown" aria-describedby="timer-label">--:--</span>
+    </div>
+
+    <div class="rail" role="presentation"><span class="rail__fill" id="rail"></span></div>
+
+    <div class="controls">
+      <button class="btn btn--solid" id="pulse-now" type="button">Pulse now</button>
+      <button class="btn" id="toggle-pause" type="button" aria-pressed="false">Pause</button>
+    </div>
+  </section>
+
+  <!-- The signature: the shuffle bag, made visible. One tile per phrase;
+       tiles go dark as they are dealt and all relight when the cycle turns. -->
+  <section class="deck" aria-labelledby="deck-label">
+    <div class="head">
+      <h2 class="eyebrow" id="deck-label">This cycle</h2>
+      <p class="tally" id="deck-tally">empty</p>
+    </div>
+    <ol class="deck__tiles" id="deck" aria-describedby="deck-note"></ol>
+    <p class="note" id="deck-note">Every phrase is dealt once before any of them comes round again.</p>
+  </section>
+
+  <section class="rhythm" aria-labelledby="rhythm-label">
+    <div class="head">
+      <h2 class="eyebrow" id="rhythm-label">Send one every</h2>
+    </div>
+    <div class="chips" id="intervals" role="group" aria-labelledby="rhythm-label"></div>
+
+    <div class="quiet">
+      <label class="switch">
+        <input type="checkbox" id="quiet-on">
+        <span class="switch__track" aria-hidden="true"><span class="switch__knob"></span></span>
+        <span class="switch__label">Hold pulses overnight</span>
+      </label>
+      <div class="quiet__times" id="quiet-times" hidden>
+        <label for="quiet-from">from</label>
+        <input type="time" id="quiet-from" value="22:00">
+        <label for="quiet-to">to</label>
+        <input type="time" id="quiet-to" value="07:00">
+      </div>
+    </div>
+  </section>
+
+  <section class="library" aria-labelledby="library-label">
+    <div class="head">
+      <h2 class="eyebrow" id="library-label">Phrases</h2>
+      <p class="tally" id="library-tally">0</p>
+    </div>
+
+    <form class="composer" id="composer">
+      <label class="sr-only" for="composer-input">Write a phrase</label>
+      <textarea id="composer-input" rows="1" maxlength="240" placeholder="Write a phrase worth hearing again"></textarea>
+      <button class="btn btn--solid" type="submit">Add</button>
+    </form>
+
+    <ul class="list" id="list"></ul>
+
+    <p class="empty" id="empty">
+      Your phrases live only on this device. Write the first one above and the
+      rhythm starts.
+    </p>
+  </section>
+
+  <footer class="foot">
+    <p id="delivery-note"></p>
+    <div class="foot__actions">
+      <button class="linkbtn" id="export" type="button">Export phrases</button>
+      <button class="linkbtn" id="import" type="button">Import</button>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+  </footer>
+
+</div>
+
+<p class="toast" id="toast" role="status" aria-live="polite"></p>
+
+<script src="lib/idb.js"></script>
+<script src="lib/bag.js"></script>
+<script src="lib/pulse.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

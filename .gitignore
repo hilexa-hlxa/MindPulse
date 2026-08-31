@@ -1,29 +1,13 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
-env/
-
-# Env / secrets
-.env
-*.pem
-
-# Database
-*.db
-*.sqlite3
-mindpulse.db
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
 # OS / editor
 .DS_Store
 .vscode/
 .idea/
 
-# Logs
+# Local secrets left over from the old server build
+.env
+*.pem
+
+# Local tooling
+.venv/
+node_modules/
 *.log
