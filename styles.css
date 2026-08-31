@@ -281,6 +281,14 @@ body {
 
 .linkbtn:hover { color: var(--bone); }
 
+.linkbtn[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.linkbtn[disabled]:hover { color: var(--muted); }
+
 /* --- shared section furniture -------------------------------------------- */
 
 .deck, .rhythm, .library {

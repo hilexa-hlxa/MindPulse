@@ -620,6 +620,21 @@
     el["toggle-pause"].disabled = true;
     el.export.disabled = true;
     el.import.disabled = true;
+
+    // Writing is what fails, so close the door rather than letting someone
+    // type a phrase that would silently go nowhere.
+    el["composer-input"].disabled = true;
+    var add = el.composer.querySelector("button[type=submit]");
+    if (add) add.disabled = true;
+
+    // These two sections only ever draw from stored state, so without it
+    // they render as empty headings. Better absent than broken-looking.
+    document.querySelector(".deck").hidden = true;
+    document.querySelector(".rhythm").hidden = true;
+
+    // The empty state invites you to write a first phrase; that invitation is
+    // false when there is nowhere to write it to.
+    el.empty.hidden = true;
   }
 
   refresh().then(function () {
