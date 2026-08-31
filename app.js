@@ -610,6 +610,18 @@
   setInterval(frame, 1000);
 
   if ("serviceWorker" in navigator) {
+    // A new worker takes over as soon as it installs, but the page it takes
+    // over is still running the old scripts it loaded from the previous
+    // cache. Nothing here is unsaved, so the honest thing is to reload once
+    // and be on the new version — otherwise an update only lands on the
+    // visit after the one that fetched it.
+    var reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (reloading) return;
+      reloading = true;
+      location.reload();
+    });
+
     window.addEventListener("load", function () {
       navigator.serviceWorker.register("sw.js").then(function () {
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
