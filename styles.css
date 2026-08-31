@@ -291,7 +291,7 @@ body {
 
 /* --- shared section furniture -------------------------------------------- */
 
-.deck, .rhythm, .library {
+.deck, .mode, .rhythm, .library {
   margin-top: 26px;
   padding-top: 22px;
   border-top: 1px solid var(--etch);
@@ -357,12 +357,44 @@ body {
   100% { transform: none; opacity: 1; }
 }
 
+/* Text comes from the app: an empty deck can mean "nothing written yet" or
+   "nothing suits this hour", and those must not read the same. */
 .deck__tiles:empty::after {
-  content: "no phrases yet";
+  content: attr(data-empty);
   font-family: var(--signal);
   font-size: 11.5px;
   color: var(--muted);
 }
+
+/* --- advanced mode ------------------------------------------------------- */
+
+/* Holding is not idle and not live: the app is working exactly as asked and
+   waiting for a window to open. Amber, because it is a fact about time. */
+.status[data-state="waiting"] { color: var(--amber); }
+
+.mode .switch { margin-top: 2px; }
+
+/* The window picker, above the composer and inside the row editor. */
+.chips--pick { margin-bottom: 11px; }
+
+.chip--window { padding: 6px 11px; font-size: 12px; }
+
+/* What a phrase is pinned to, sat at the end of its line in the list. */
+.row__window {
+  margin-left: 9px;
+  padding: 2px 7px;
+  border: 1px solid var(--etch-strong);
+  border-radius: 999px;
+  font-family: var(--signal);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  vertical-align: 2px;
+}
+
+.row__window[data-window="anytime"] { opacity: 0.55; }
 
 /* --- rhythm -------------------------------------------------------------- */
 

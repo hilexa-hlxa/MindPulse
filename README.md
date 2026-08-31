@@ -70,6 +70,38 @@ Delivery is done by your device, not by a server.
 **Hold pulses overnight** pauses delivery between the two times you choose, and
 picks up again when the window lifts.
 
+## Advanced mode
+
+Off by default, and while it is off nothing about the app changes.
+
+Turned on, every phrase can be pinned to a part of the day, and only the ones
+that suit the hour are sent:
+
+```
+Morning     06:00 – 12:00     momentum — something to start on
+Afternoon   12:00 – 18:00     focus — something to push through with
+Evening     18:00 – 24:00     reckoning — something honest
+Anytime                       fits every window
+```
+
+The composer asks for the tone the window wants, so an evening phrase is
+prompted for something like "Your mom is still at work right now." rather than
+another line of encouragement.
+
+Anytime is the default, which is what lets a library written before any of this
+existed keep working the moment the switch is flipped: an uncategorised phrase
+is an Anytime phrase, and Anytime fits everywhere.
+
+The small hours belong to no window. Between midnight and 06:00 only Anytime
+phrases are sent — and by default the overnight hold covers most of that anyway.
+
+If nothing suits the current hour, MindPulse holds rather than sending
+something from the wrong window, and says so on screen. The next pulse lands as
+soon as a window opens with something in it, rather than an interval later.
+
+The interval still decides how often a pulse arrives; the window only decides
+what is eligible when one does.
+
 ## How much text a notification shows
 
 Measured on a macOS notification banner rather than assumed: the title is a
@@ -103,7 +135,8 @@ npm test          # or run any one on its own: node test/bag.test.js
 per cycle, no back-to-back repeats across cycle boundaries, uniform delivery
 over many cycles, and correct behaviour when the phrase list is edited
 mid-cycle. `test/pulse.test.js` covers the scheduling arithmetic, mostly the
-overnight window, which wraps past midnight. `test/transfer.test.js` covers
+overnight window, which wraps past midnight, and the time windows Advanced
+Mode delivers by. `test/transfer.test.js` covers
 import and export — what counts as the same phrase, and the promise that an
 import never disturbs what you already have.
 
@@ -114,7 +147,7 @@ index.html              the whole interface
 styles.css
 app.js                  reads state, paints it, writes back changes
 lib/bag.js              the shuffle bag
-lib/pulse.js            deciding when to send, and sending
+lib/pulse.js            deciding when to send, what suits the hour, and sending
 lib/idb.js              key/value storage on IndexedDB
 lib/transfer.js         reading and writing export files
 sw.js                   offline shell, background delivery, notification taps

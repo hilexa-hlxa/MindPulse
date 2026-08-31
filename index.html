@@ -70,6 +70,22 @@
     <p class="note" id="deck-note">Every phrase is dealt once before any of them comes round again.</p>
   </section>
 
+  <!-- Advanced mode: pin phrases to a part of the day, and send only what
+       suits the hour. Off by default, and everything it adds stays hidden
+       until it is on. -->
+  <section class="mode" aria-labelledby="mode-label">
+    <div class="head">
+      <h2 class="eyebrow" id="mode-label">Advanced mode</h2>
+      <p class="tally" id="mode-window"></p>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="advanced-on">
+      <span class="switch__track" aria-hidden="true"><span class="switch__knob"></span></span>
+      <span class="switch__label">Match phrases to the time of day</span>
+    </label>
+    <p class="note" id="mode-note">Give each phrase a part of the day, and only the ones that suit the hour get sent.</p>
+  </section>
+
   <section class="rhythm" aria-labelledby="rhythm-label">
     <div class="head">
       <h2 class="eyebrow" id="rhythm-label">Send one every</h2>
@@ -96,6 +112,8 @@
       <h2 class="eyebrow" id="library-label">Phrases</h2>
       <p class="tally" id="library-tally">0</p>
     </div>
+
+    <div class="chips chips--pick" id="composer-windows" hidden role="group" aria-label="When this phrase can be sent"></div>
 
     <form class="composer" id="composer">
       <label class="sr-only" for="composer-input">Write a phrase</label>

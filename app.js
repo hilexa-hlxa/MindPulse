@@ -34,6 +34,7 @@
   ["status", "status-text", "permit", "permit-text", "permit-btn", "last-when", "phrase",
    "timer-label", "countdown", "rail", "pulse-now", "toggle-pause", "deck", "deck-tally",
    "intervals", "quiet-on", "quiet-times", "quiet-from", "quiet-to", "library-tally",
+   "mode-window", "mode-note", "advanced-on", "composer-windows",
    "composer", "composer-input", "counter", "list", "empty", "delivery-note", "export", "import",
    "import-file", "toast"].forEach(function (id) {
     el[id] = document.getElementById(id);
@@ -42,6 +43,11 @@
   /** Everything the screen is currently drawn from. */
   var state = null;
   var editingId = null;
+  // Which window a newly written phrase gets pinned to. Resets to Anytime
+  // after each one, so the picker never quietly files a phrase somewhere the
+  // person had stopped thinking about.
+  var composerWindow = "anytime";
+  var DEFAULT_PLACEHOLDER = "Write a phrase worth hearing again";
   var lastRemaining = null;
   var lastDeliveredAt = null;
   var ticking = false;
@@ -105,6 +111,26 @@
     toastTimer = setTimeout(function () { el.toast.classList.remove("is-shown"); }, 3200);
   }
 
+  function windowById(id) {
+    return Pulse.WINDOWS.filter(function (w) { return w.id === id; })[0] || Pulse.WINDOWS[0];
+  }
+
+  /** The four Anytime/Morning/Afternoon/Evening chips, wherever they appear. */
+  function windowChips(container, selected, onPick) {
+    container.innerHTML = "";
+    Pulse.WINDOWS.forEach(function (w) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip chip--window";
+      chip.dataset.window = w.id;
+      chip.textContent = w.label;
+      chip.title = w.tone;
+      chip.setAttribute("aria-pressed", String(w.id === selected));
+      chip.addEventListener("click", function () { onPick(w); });
+      container.appendChild(chip);
+    });
+  }
+
   function svg(paths) {
     return '<svg viewBox="0 0 16 16" aria-hidden="true">' + paths + "</svg>";
   }
@@ -137,9 +163,14 @@
 
   // --- painting -----------------------------------------------------------
 
+  /** What could be sent right now — in Advanced Mode, only what suits the hour. */
+  function sendable() {
+    return Pulse.eligible(state.phrases, new Date(), state.settings);
+  }
+
   /** Which phrases are still to come in the cycle currently running. */
   function pendingSet() {
-    var ids = Pulse.active(state.phrases).map(function (p) { return p.id; });
+    var ids = sendable().map(function (p) { return p.id; });
     if (!ids.length) return new Set();
     var bag = Bag.reconcile(state.bag || Bag.emptyBag(), ids);
     var pending = bag.cursor >= bag.order.length ? bag.order : bag.order.slice(bag.cursor);
@@ -153,6 +184,9 @@
 
     if (state.settings.paused) { value = "paused"; text = "Paused"; }
     else if (!activeCount) { value = "off"; text = "Idle"; }
+    // Advanced Mode can leave a live library with nothing that suits the hour.
+    // That is working as asked, not broken, and it should not read as "Live".
+    else if (!sendable().length) { value = "waiting"; text = "Holding"; }
     else if (permission !== "granted") { value = "off"; text = "Silent"; }
     else { value = "live"; text = "Live"; }
 
@@ -229,7 +263,7 @@
 
   function renderDeck() {
     var pending = pendingSet();
-    var actives = Pulse.active(state.phrases);
+    var actives = sendable();
     var remaining = pending.size;
 
     // The deck relights all at once when a cycle turns over, which is the
@@ -245,9 +279,64 @@
       el.deck.appendChild(li);
     });
 
+    // An empty deck means two different things now: nothing written yet, or
+    // nothing that suits this hour. Saying "no phrases yet" to someone who
+    // has a full library and is simply between windows would be a lie.
+    var live = Pulse.active(state.phrases).length;
+    el.deck.dataset.empty = live ? "nothing for this window" : "no phrases yet";
     el["deck-tally"].textContent = actives.length
       ? remaining + " of " + actives.length + " left"
-      : "empty";
+      : (live ? "none this window" : "empty");
+  }
+
+  function renderMode() {
+    var on = !!state.settings.advanced;
+    el["advanced-on"].checked = on;
+
+    if (!on) {
+      el["mode-window"].textContent = "";
+      el["mode-note"].textContent =
+        "Give each phrase a part of the day, and only the ones that suit the hour get sent.";
+      return;
+    }
+
+    var current = Pulse.windowAt(new Date());
+    var ready = sendable().length;
+    var live = Pulse.active(state.phrases).length;
+
+    el["mode-window"].textContent = (current ? windowById(current).label : "Small hours") +
+      " · " + ready + " ready";
+
+    if (!live) {
+      el["mode-note"].textContent = "Write a phrase and pin it to a part of the day.";
+    } else if (ready) {
+      el["mode-note"].textContent = current
+        ? windowById(current).tone + ". " + ready + (ready === 1 ? " phrase suits" : " phrases suit") + " this window."
+        : "Between the windows — only Anytime phrases are sent until morning.";
+    } else {
+      // Saying nothing here would look like a bug rather than a choice.
+      el["mode-note"].textContent = current
+        ? "Nothing is pinned to " + windowById(current).label.toLowerCase() +
+          ", so pulses are holding until a window opens with something in it."
+        : "Nothing is pinned to Anytime, so pulses are holding until morning.";
+    }
+  }
+
+  /** The picker above the composer, and the tone it asks for. */
+  function renderComposer() {
+    var on = !!state.settings.advanced;
+    el["composer-windows"].hidden = !on;
+
+    if (!on) {
+      el["composer-input"].placeholder = DEFAULT_PLACEHOLDER;
+      return;
+    }
+    windowChips(el["composer-windows"], composerWindow, function (w) {
+      composerWindow = w.id;
+      renderComposer();
+      el["composer-input"].focus();
+    });
+    el["composer-input"].placeholder = windowById(composerWindow).placeholder;
   }
 
   function renderRhythm() {
@@ -303,6 +392,16 @@
         text.className = "row__text";
         text.textContent = phrase.text;
 
+        // Only worth showing while the categories mean something.
+        if (state.settings.advanced) {
+          var tag = document.createElement("span");
+          var pinned = Pulse.phraseWindow(phrase);
+          tag.className = "row__window";
+          tag.dataset.window = pinned;
+          tag.textContent = windowById(pinned).label;
+          text.appendChild(tag);
+        }
+
         var actions = document.createElement("div");
         actions.className = "row__actions";
         actions.appendChild(iconButton(
@@ -351,6 +450,20 @@
     field.value = phrase.text;
     field.setAttribute("aria-label", "Edit phrase");
 
+    // The window this phrase is pinned to, changed in place while the editor
+    // is open and written back only when Save is pressed.
+    var picked = Pulse.phraseWindow(phrase);
+    var picker = document.createElement("div");
+    picker.className = "chips chips--pick";
+    picker.hidden = !state.settings.advanced;
+    picker.setAttribute("role", "group");
+    picker.setAttribute("aria-label", "When this phrase can be sent");
+
+    function paintPicker() {
+      windowChips(picker, picked, function (w) { picked = w.id; paintPicker(); });
+    }
+    if (state.settings.advanced) paintPicker();
+
     var actions = document.createElement("div");
     actions.className = "row__edit-actions";
 
@@ -363,7 +476,7 @@
       if (!text) { toast("A phrase needs some words."); field.focus(); return; }
       editingId = null;
       savePhrases(state.phrases.map(function (p) {
-        return p.id === phrase.id ? Object.assign({}, p, { text: text }) : p;
+        return p.id === phrase.id ? Object.assign({}, p, { text: text, window: picked }) : p;
       })).then(function () { toast("Phrase updated."); });
     });
 
@@ -374,7 +487,7 @@
     cancel.addEventListener("click", function () { editingId = null; render(); });
 
     actions.append(save, cancel);
-    wrap.append(field, actions);
+    wrap.append(field, picker, actions);
     setTimeout(function () { field.focus(); field.selectionStart = field.value.length; }, 0);
     return wrap;
   }
@@ -392,6 +505,8 @@
     renderPermit();
     renderReadout();
     renderDeck();
+    renderMode();
+    renderComposer();
     renderRhythm();
     renderLibrary();
     paintClock(Date.now());
@@ -400,7 +515,14 @@
   // --- actions ------------------------------------------------------------
 
   function addPhrase(text) {
-    var phrase = { id: newId(), text: text, note: "", muted: false, createdAt: Date.now() };
+    var phrase = {
+      id: newId(),
+      text: text,
+      note: "",
+      muted: false,
+      window: state.settings.advanced ? composerWindow : "anytime",
+      createdAt: Date.now(),
+    };
     return savePhrases((state.phrases || []).concat([phrase]));
   }
 
@@ -507,7 +629,12 @@
       autoGrow(el["composer-input"]);
       renderCounter();
       el["composer-input"].focus();
-      toast("Added. It's in the cycle already running.");
+      var where = state.settings.advanced && composerWindow !== "anytime"
+        ? " Pinned to " + windowById(composerWindow).label.toLowerCase() + "."
+        : "";
+      composerWindow = "anytime";
+      renderComposer();
+      toast("Added. It's in the cycle already running." + where);
     });
   });
 
@@ -541,6 +668,16 @@
   });
 
   el["permit-btn"].addEventListener("click", requestPermission);
+
+  el["advanced-on"].addEventListener("change", function () {
+    var on = this.checked;
+    composerWindow = "anytime";
+    saveSettings({ advanced: on }).then(function () {
+      toast(on
+        ? "Advanced mode on — phrases can be pinned to a part of the day."
+        : "Advanced mode off — every phrase is back in the rotation.");
+    });
+  });
 
   el["quiet-on"].addEventListener("change", function () {
     var quiet = Object.assign({}, state.settings.quiet, { enabled: this.checked });

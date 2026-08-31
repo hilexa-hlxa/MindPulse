@@ -29,6 +29,8 @@ The payoff is that a pulse delivered while the app is closed is drawn by exactly
 
 **Layers.** `lib/bag.js` and `lib/pulse.js` hold every decision about *which* phrase and *when*; `app.js` only reads that state, paints it, and writes back edits. Keep new scheduling or selection logic in `lib/`, not in `app.js`.
 
+**Advanced Mode** (`settings.advanced`, default `false`) narrows the pool by time of day. `Pulse.WINDOWS` is the single source for the four categories — id, label, hours, and the composer's tone guidance all live there, so adding or retuning a window is one edit. A phrase's category is `phrase.window`; anything missing or unrecognised reads as `"anytime"` via `Pulse.phraseWindow`, which is what keeps pre-existing libraries working. `Pulse.eligible(phrases, when, settings)` is the only thing that should decide what may be sent — `fire`, `tick`, and every count on screen go through it. When it returns nothing, `tick` deliberately *holds* the schedule instead of advancing it, so a pulse lands as soon as a window opens.
+
 **State** is a flat key/value store in IndexedDB (db `mindpulse`, store `kv`) under the keys `phrases`, `settings`, `bag`, `schedule`, `history`. `MPPulse.readState()` is the single reader: it declares defaults in `STATE_SPEC` and re-fills missing settings fields via `Object.assign`, which is how older stored state is migrated forward. Add a new setting by extending `DEFAULT_SETTINGS` — stored objects will pick it up.
 
 **Pure modules take their dependencies as arguments.** `lib/bag.js` takes `rnd`; `lib/transfer.js` takes an id source and a clock. That is what makes them testable without a DOM, a database, or a fake timer — follow it for anything new in `lib/`.
