@@ -176,6 +176,9 @@ body {
 }
 
 .eyebrow__when::before { content: " · "; }
+/* Before the first pulse there is no time to show, and a separator on its
+   own is the first thing a new arrival reads. */
+.eyebrow__when:empty::before { content: none; }
 
 .phrase {
   margin: 14px 0 22px;
