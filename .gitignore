@@ -11,3 +11,12 @@
 .venv/
 node_modules/
 *.log
+
+# Ruflo / claude-flow local secrets and runtime data
+.env.local
+.env.*.local
+.claude-flow/
+.agents/
+.swarm/
+.mcp.json
+ruvector.db
