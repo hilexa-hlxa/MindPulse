@@ -13,6 +13,13 @@
   var Pulse = self.MPPulse;
 
   var MINUTE = 60 * 1000;
+
+  // Measured on a macOS notification banner: the body renders three lines and
+  // clips just past 110 characters. Under FITS_IN_NOTIFICATION a phrase is
+  // certain to arrive whole; MAX_LENGTH leaves a little room above that for
+  // anyone who would rather have the words than the guarantee.
+  var FITS_IN_NOTIFICATION = 100;
+  var MAX_LENGTH = 120;
   var INTERVALS = [
     { label: "15m", ms: 15 * MINUTE },
     { label: "30m", ms: 30 * MINUTE },
@@ -26,7 +33,7 @@
   ["status", "status-text", "permit", "permit-text", "permit-btn", "last-when", "phrase",
    "timer-label", "countdown", "rail", "pulse-now", "toggle-pause", "deck", "deck-tally",
    "intervals", "quiet-on", "quiet-times", "quiet-from", "quiet-to", "library-tally",
-   "composer", "composer-input", "list", "empty", "delivery-note", "export", "import",
+   "composer", "composer-input", "counter", "list", "empty", "delivery-note", "export", "import",
    "import-file", "toast"].forEach(function (id) {
     el[id] = document.getElementById(id);
   });
@@ -72,6 +79,21 @@
   function intervalLabel(ms) {
     var match = INTERVALS.filter(function (i) { return i.ms === ms; })[0];
     return match ? match.label : Math.round(ms / MINUTE) + "m";
+  }
+
+  /** Report length against what a notification can actually show. */
+  function renderCounter() {
+    var length = el["composer-input"].value.trim().length;
+    if (!length) {
+      el.counter.textContent = "";
+      el.counter.classList.remove("is-tight");
+      return;
+    }
+    var tight = length > FITS_IN_NOTIFICATION;
+    el.counter.textContent = tight
+      ? length + " / " + MAX_LENGTH + " · may be cut off in the notification"
+      : length + " / " + MAX_LENGTH;
+    el.counter.classList.toggle("is-tight", tight);
   }
 
   var toastTimer = null;
@@ -324,7 +346,7 @@
 
     var field = document.createElement("textarea");
     field.rows = 2;
-    field.maxLength = 240;
+    field.maxLength = MAX_LENGTH;
     field.value = phrase.text;
     field.setAttribute("aria-label", "Edit phrase");
 
@@ -500,12 +522,16 @@
     addPhrase(text).then(function () {
       el["composer-input"].value = "";
       autoGrow(el["composer-input"]);
+      renderCounter();
       el["composer-input"].focus();
       toast("Added. It's in the cycle already running.");
     });
   });
 
-  el["composer-input"].addEventListener("input", function () { autoGrow(this); });
+  el["composer-input"].addEventListener("input", function () {
+    autoGrow(this);
+    renderCounter();
+  });
   el["composer-input"].addEventListener("keydown", function (event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();

@@ -107,9 +107,17 @@ check("nothing is ever put in the narrow title field", () => {
 });
 
 check("the longest phrase the app accepts still arrives whole", () => {
-  const max = "x".repeat(240);
+  const max = "x".repeat(120);   // the composer's cap
   assert(Pulse.splitForNotification({ text: max, note: "" }).body === max,
-    "a 240-character phrase must survive intact in the body");
+    "a 120-character phrase must survive intact in the body");
+});
+
+check("phrases written before the cap was lowered are left alone", () => {
+  // Existing phrases can be longer than today's limit; the app must never
+  // silently shorten something already written.
+  const legacy = "y".repeat(240);
+  assert(Pulse.splitForNotification({ text: legacy, note: "" }).body === legacy,
+    "an over-length phrase must still be delivered in full");
 });
 
 console.log(failures ? `\n${failures} failing` : "\nall passing");

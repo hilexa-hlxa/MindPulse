@@ -470,6 +470,21 @@ body {
 .composer textarea:focus { outline: none; border-color: rgba(95, 227, 180, 0.55); }
 .composer .btn { align-self: stretch; }
 
+/* The notification is the point of the app, so the counter reports the one
+   thing that matters about length: whether the phrase survives the trip. */
+.counter {
+  margin: 8px 2px 0;
+  text-align: right;
+  font-family: var(--signal);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-height: 16px;
+}
+
+.counter.is-tight { color: var(--amber); }
+
 .list { list-style: none; margin: 16px 0 0; padding: 0; }
 
 .row {
