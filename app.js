@@ -11,6 +11,7 @@
   var Store = self.MPStore;
   var Bag = self.MPBag;
   var Pulse = self.MPPulse;
+  var Transfer = self.MPTransfer;
 
   var MINUTE = 60 * 1000;
 
@@ -467,13 +468,7 @@
   }
 
   function exportPhrases() {
-    var payload = {
-      app: "MindPulse",
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      phrases: state.phrases,
-      settings: state.settings,
-    };
+    var payload = Transfer.exportPayload(state);
     var url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
     var a = document.createElement("a");
     a.href = url;
@@ -486,22 +481,10 @@
   /** Import adds what's missing and leaves what's already here alone. */
   function importPhrases(file) {
     file.text().then(function (raw) {
-      var data = JSON.parse(raw);
-      var incoming = Array.isArray(data) ? data : data.phrases;
-      if (!Array.isArray(incoming)) throw new Error("no phrases");
-
-      var have = new Set(state.phrases.map(function (p) { return p.text.trim(); }));
-      var added = incoming
-        .map(function (p) { return typeof p === "string" ? { text: p } : p; })
-        .filter(function (p) { return p && typeof p.text === "string" && p.text.trim(); })
-        .filter(function (p) { return !have.has(p.text.trim()); })
-        .map(function (p) {
-          return { id: newId(), text: p.text.trim(), note: p.note || "", muted: !!p.muted, createdAt: Date.now() };
-        });
-
-      if (!added.length) { toast("Nothing new to add — those phrases are already here."); return; }
-      savePhrases(state.phrases.concat(added)).then(function () {
-        toast("Added " + added.length + (added.length === 1 ? " phrase." : " phrases."));
+      var result = Transfer.merge(state.phrases, Transfer.parse(raw), newId, Date.now());
+      if (!result.added.length) { toast("Nothing new to add — those phrases are already here."); return; }
+      return savePhrases(result.phrases).then(function () {
+        toast("Added " + result.added.length + (result.added.length === 1 ? " phrase." : " phrases."));
       });
     }).catch(function () {
       toast("That file isn't a MindPulse export.");

@@ -11,7 +11,7 @@
  */
 importScripts("lib/idb.js", "lib/bag.js", "lib/pulse.js");
 
-const CACHE = "mindpulse-shell-v10";
+const CACHE = "mindpulse-shell-v11";
 const SHELL = [
   "./",
   "index.html",
@@ -20,6 +20,7 @@ const SHELL = [
   "lib/idb.js",
   "lib/bag.js",
   "lib/pulse.js",
+  "lib/transfer.js",
   "manifest.json",
   "icons/icon-192.png",
   "icons/icon-512.png",

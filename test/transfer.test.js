@@ -1,0 +1,155 @@
+/**
+ * Checks the import/export contract: an import adds back what you do not
+ * already have and leaves everything else exactly as it was.
+ * Run with: node test/transfer.test.js
+ */
+const fs = require("fs");
+const path = require("path");
+const vm = require("vm");
+
+const ctx = { console, Date, Math, Object, String, JSON, Array, Set, Boolean, isNaN, parseInt };
+ctx.self = ctx;
+vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "../lib/transfer.js"), "utf8"), ctx);
+const Transfer = ctx.MPTransfer;
+
+let failures = 0;
+function check(name, fn) {
+  try {
+    fn();
+    console.log("  ok   " + name);
+  } catch (e) {
+    failures++;
+    console.log("  FAIL " + name + "\n       " + e.message);
+  }
+}
+function assert(cond, msg) {
+  if (!cond) throw new Error(msg);
+}
+
+/** Predictable ids so a failure is reproducible. */
+function counter() {
+  let n = 0;
+  return function () { return "new-" + ++n; };
+}
+
+function phrase(text, extra) {
+  return Object.assign({ id: "have-" + text, text: text, note: "", muted: false, createdAt: 1000 }, extra || {});
+}
+
+const texts = (list) => list.map((p) => p.text);
+
+// --- parsing ------------------------------------------------------------
+
+check("reads the object form an export writes", () => {
+  const got = Transfer.parse(JSON.stringify({ app: "MindPulse", version: 1, phrases: [{ text: "one" }] }));
+  assert(texts(got).join() === "one", `got ${JSON.stringify(got)}`);
+});
+
+check("reads a bare array of phrase objects", () => {
+  const got = Transfer.parse(JSON.stringify([{ text: "one" }, { text: "two" }]));
+  assert(texts(got).join() === "one,two", `got ${JSON.stringify(got)}`);
+});
+
+check("reads a bare array of plain strings", () => {
+  const got = Transfer.parse(JSON.stringify(["one", "two"]));
+  assert(texts(got).join() === "one,two", `got ${JSON.stringify(got)}`);
+});
+
+check("carries note and muted across, and trims the text", () => {
+  const got = Transfer.parse(JSON.stringify([{ text: "  spaced  ", note: "a note", muted: true }]));
+  assert(got[0].text === "spaced", `text not trimmed: ${JSON.stringify(got[0].text)}`);
+  assert(got[0].note === "a note", "note dropped");
+  assert(got[0].muted === true, "muted dropped");
+});
+
+check("drops entries with no usable text instead of failing the whole file", () => {
+  const got = Transfer.parse(JSON.stringify([{ text: "keep" }, { text: "   " }, {}, null, 42, { note: "x" }]));
+  assert(texts(got).join() === "keep", `got ${JSON.stringify(texts(got))}`);
+});
+
+check("refuses a file that is not an export at all", () => {
+  const bad = ["not json at all", JSON.stringify({ app: "MindPulse" }), JSON.stringify({ phrases: "nope" }), JSON.stringify(7)];
+  bad.forEach((raw) => {
+    let threw = false;
+    try { Transfer.parse(raw); } catch (e) { threw = true; }
+    assert(threw, `accepted a file it should have refused: ${raw}`);
+  });
+});
+
+// --- merging ------------------------------------------------------------
+
+check("adds a phrase that is not already here", () => {
+  const r = Transfer.merge([phrase("here")], Transfer.parse(JSON.stringify(["fresh"])), counter(), 2000);
+  assert(texts(r.phrases).join() === "here,fresh", `got ${JSON.stringify(texts(r.phrases))}`);
+  assert(r.added.length === 1, `expected 1 added, got ${r.added.length}`);
+});
+
+check("leaves what is already here exactly as it was", () => {
+  const mine = phrase("here", { muted: true, note: "mine", createdAt: 55 });
+  const r = Transfer.merge([mine], Transfer.parse(JSON.stringify([{ text: "here", muted: false, note: "theirs" }])), counter(), 2000);
+  assert(r.phrases.length === 1, `import duplicated an existing phrase: ${JSON.stringify(texts(r.phrases))}`);
+  assert(r.phrases[0] === mine, "an existing phrase was rewritten rather than left alone");
+  assert(r.added.length === 0, "reported an addition that did not happen");
+});
+
+check("matches on trimmed text, so spacing does not smuggle a duplicate in", () => {
+  const r = Transfer.merge([phrase("here")], Transfer.parse(JSON.stringify(["  here  "])), counter(), 2000);
+  assert(r.added.length === 0, `whitespace created a duplicate: ${JSON.stringify(texts(r.phrases))}`);
+});
+
+check("a file that repeats a phrase still only adds it once", () => {
+  const r = Transfer.merge([], Transfer.parse(JSON.stringify(["twice", "twice", " twice "])), counter(), 2000);
+  assert(r.added.length === 1, `expected 1 added, got ${r.added.length}: ${JSON.stringify(texts(r.phrases))}`);
+});
+
+check("stamps each added phrase with its own id", () => {
+  const r = Transfer.merge([], Transfer.parse(JSON.stringify(["a", "b", "c"])), counter(), 2000);
+  const ids = r.added.map((p) => p.id);
+  assert(new Set(ids).size === 3, `ids collided: ${ids}`);
+  assert(r.added.every((p) => p.createdAt === 2000), "createdAt not stamped from the clock passed in");
+});
+
+check("an import that brings nothing new changes nothing", () => {
+  const mine = [phrase("a"), phrase("b")];
+  const r = Transfer.merge(mine, Transfer.parse(JSON.stringify(["a", "b"])), counter(), 2000);
+  assert(r.added.length === 0, "reported additions");
+  assert(r.phrases.length === 2 && r.phrases[0] === mine[0] && r.phrases[1] === mine[1], "the list was rebuilt for no reason");
+});
+
+check("importing into an empty list takes everything", () => {
+  const r = Transfer.merge([], Transfer.parse(JSON.stringify(["a", "b"])), counter(), 2000);
+  assert(texts(r.phrases).join() === "a,b", `got ${JSON.stringify(texts(r.phrases))}`);
+});
+
+check("long phrases from an older export are not silently cut", () => {
+  const long = "x".repeat(300);
+  const r = Transfer.merge([], Transfer.parse(JSON.stringify([long])), counter(), 2000);
+  assert(r.phrases[0].text.length === 300, `import truncated a phrase to ${r.phrases[0].text.length}`);
+});
+
+// --- round trip ---------------------------------------------------------
+
+check("export then import into an empty list restores the same phrases", () => {
+  const mine = [phrase("one"), phrase("two", { muted: true })];
+  const raw = JSON.stringify(Transfer.exportPayload({ phrases: mine, settings: { intervalMs: 900000 } }, "2026-01-01T00:00:00.000Z"));
+  const r = Transfer.merge([], Transfer.parse(raw), counter(), 2000);
+  assert(texts(r.phrases).join() === "one,two", `got ${JSON.stringify(texts(r.phrases))}`);
+  assert(r.phrases[1].muted === true, "muted state lost on the round trip");
+});
+
+check("export then import into the same list adds nothing", () => {
+  const mine = [phrase("one"), phrase("two")];
+  const raw = JSON.stringify(Transfer.exportPayload({ phrases: mine, settings: {} }, "2026-01-01T00:00:00.000Z"));
+  const r = Transfer.merge(mine, Transfer.parse(raw), counter(), 2000);
+  assert(r.added.length === 0, `re-importing your own export added ${r.added.length} phrases`);
+});
+
+check("the export names itself so an import can recognise it", () => {
+  const payload = Transfer.exportPayload({ phrases: [], settings: {} }, "2026-01-01T00:00:00.000Z");
+  assert(payload.app === "MindPulse", "export is not labelled");
+  assert(payload.exportedAt === "2026-01-01T00:00:00.000Z", "export timestamp not taken from the clock passed in");
+});
+
+console.log(failures ? "\n" + failures + " failing" : "\nall passing");
+process.exit(failures ? 1 : 0);

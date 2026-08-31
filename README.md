@@ -96,14 +96,16 @@ the full phrase is set large with no limit at all.
 ## Tests
 
 ```sh
-npm test          # or: node test/bag.test.js && node test/pulse.test.js
+npm test          # or run any one on its own: node test/bag.test.js
 ```
 
 `test/bag.test.js` checks the guarantees the shuffle bag makes — full coverage
 per cycle, no back-to-back repeats across cycle boundaries, uniform delivery
 over many cycles, and correct behaviour when the phrase list is edited
 mid-cycle. `test/pulse.test.js` covers the scheduling arithmetic, mostly the
-overnight window, which wraps past midnight.
+overnight window, which wraps past midnight. `test/transfer.test.js` covers
+import and export — what counts as the same phrase, and the promise that an
+import never disturbs what you already have.
 
 ## Layout
 
@@ -114,6 +116,7 @@ app.js                  reads state, paints it, writes back changes
 lib/bag.js              the shuffle bag
 lib/pulse.js            deciding when to send, and sending
 lib/idb.js              key/value storage on IndexedDB
+lib/transfer.js         reading and writing export files
 sw.js                   offline shell, background delivery, notification taps
 ```
 
