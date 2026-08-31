@@ -602,10 +602,30 @@
     if (due || now - lastTickAt > 25000) runTick();
   }
 
+  /**
+   * Storage can simply not be there — Safari's private browsing has blocked
+   * IndexedDB, and any browser can have site data switched off. The app has
+   * nowhere to put phrases in that case, so say what happened rather than
+   * leaving a screen that looks broken.
+   */
+  function reportStorageFailure() {
+    el.permit.hidden = false;
+    el["permit-text"].textContent =
+      "MindPulse can't reach this browser's storage, so it has nowhere to keep your phrases. " +
+      "That usually means private browsing, or site data being blocked for this site.";
+    el["permit-btn"].hidden = true;
+    el["timer-label"].textContent = "Storage unavailable";
+    el.countdown.textContent = "--:--";
+    el["pulse-now"].disabled = true;
+    el["toggle-pause"].disabled = true;
+    el.export.disabled = true;
+    el.import.disabled = true;
+  }
+
   refresh().then(function () {
     renderDeliveryNote();
     return runTick();
-  });
+  }).catch(reportStorageFailure);
 
   setInterval(frame, 1000);
 

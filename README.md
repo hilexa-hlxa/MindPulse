@@ -10,7 +10,13 @@ It is a single static page. No server, no account, no build step, no
 dependencies. Your phrases are stored in IndexedDB on your own device and are
 never sent anywhere.
 
-## Run it
+## Use it
+
+Live at **<https://mindpulse-app.onrender.com>** — open it on your phone and
+add it to your home screen to get an app icon, its own window, and
+notifications in the normal tray.
+
+## Run it locally
 
 ```sh
 python3 -m http.server 8123
@@ -63,6 +69,21 @@ Delivery is done by your device, not by a server.
 
 **Hold pulses overnight** pauses delivery between the two times you choose, and
 picks up again when the window lifts.
+
+## How much text a notification shows
+
+Measured on a macOS notification banner rather than assumed: the title is a
+single line clipped near 36 characters and cannot be expanded, while the body
+wraps over three lines and holds around 110. So the phrase always goes in the
+body, and the title stays a short fixed label — putting the app name in the
+roomy field and the words that matter in the narrow one is the wrong way
+round.
+
+The composer caps phrases at 120 characters and shows a counter that turns
+amber past 100, where a phrase starts to risk being cut off. Cyrillic is wider
+than Latin, so the exact limit varies by script; under 100 is safe for both.
+Nothing is truly lost either way — tapping a notification opens the app, where
+the full phrase is set large with no limit at all.
 
 ## Around the app
 
