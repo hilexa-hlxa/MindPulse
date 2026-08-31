@@ -80,39 +80,36 @@ check("with no quiet window the interval is the whole rule", () => {
   assert(next === at(0, 0, 11).getTime(), "expected midnight, got " + new Date(next));
 });
 
-check("a short phrase stays the notification headline", () => {
+check("the phrase always goes in the body, never the title", () => {
   const short = "Start badly. Fix it later.";
   const out = Pulse.splitForNotification({ text: short, note: "" });
-  assert(out.title === short, "short phrase should be the whole title");
-  assert(out.body === "MindPulse", "short phrase should leave the body as the app name");
+  assert(out.body === short, "the body must carry the phrase");
+  assert(out.title === "MindPulse", "the title stays a short fixed label");
 });
 
-check("a long phrase is carried in full by the body", () => {
+check("a long phrase reaches the body complete and unclipped", () => {
   const long = "The mood follows the action rather than the other way round, so the "
     + "way out is to start moving before you feel like starting at all.";
   const out = Pulse.splitForNotification({ text: long, note: "" });
   assert(out.body === long, "the body must carry the complete phrase");
-  assert(out.title.length < long.length, "the title should be a lead, not the whole thing");
-  assert(out.title.endsWith("\u2026"), "a clipped title should show an ellipsis");
-  assert(long.startsWith(out.title.slice(0, -1)), "the title should lead with the phrase's own words");
+  assert(!out.body.includes("\u2026"), "the app must not pre-truncate the phrase itself");
 });
 
-check("a clipped title never breaks mid-word", () => {
-  const long = "Nobody is thinking about your mistakes anywhere near as much as you are, "
-    + "and most of them have forgotten already.";
-  const title = Pulse.splitForNotification({ text: long, note: "" }).title;
-  const lead = title.slice(0, -1);
-  assert(!/[\s,;:.!?-]$/.test(lead), "trailing punctuation should be trimmed: " + JSON.stringify(lead));
-  assert(long.startsWith(lead), "the lead should be a literal prefix of the phrase");
-  // Whatever follows the lead must not be a letter, or a word was split.
-  const nextChar = long.charAt(lead.length);
-  assert(!/[A-Za-z0-9]/.test(nextChar), "clipped mid-word: " + JSON.stringify(lead + "|" + nextChar));
+check("nothing is ever put in the narrow title field", () => {
+  // Measured on macOS: the title is clipped near 29 characters. Anything
+  // longer than the label would risk exactly the bug this replaced.
+  const cases = ["short", "x".repeat(240), "Если будешь дохуя думать, можно и передумать"];
+  cases.forEach((text) => {
+    const out = Pulse.splitForNotification({ text, note: "" });
+    assert(out.title.length <= 29, "title must stay inside the clip point: " + out.title);
+    assert(out.body === text, "body must be the untouched phrase");
+  });
 });
 
 check("the longest phrase the app accepts still arrives whole", () => {
   const max = "x".repeat(240);
-  const out = Pulse.splitForNotification({ text: max, note: "" });
-  assert(out.body === max, "a 240-character phrase must survive intact in the body");
+  assert(Pulse.splitForNotification({ text: max, note: "" }).body === max,
+    "a 240-character phrase must survive intact in the body");
 });
 
 console.log(failures ? `\n${failures} failing` : "\nall passing");
