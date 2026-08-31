@@ -5,6 +5,8 @@
 
 # Local secrets left over from the old server build
 .env
+.env.local
+.env.*.local
 *.pem
 
 # Local tooling
@@ -12,11 +14,21 @@
 node_modules/
 *.log
 
-# Ruflo / claude-flow local secrets and runtime data
-.env.local
-.env.*.local
+# AI agent tooling — local state, session stores, and generated config. None of
+# it is part of the app, and most of it is specific to one machine.
+# CLAUDE.md is deliberately tracked: it documents the project, not the tooling.
+.claude/
 .claude-flow/
 .agents/
 .swarm/
 .mcp.json
 ruvector.db
+
+# Other assistants, should any of them turn up here
+.cursor/
+.cursorrules
+.aider*
+.codex/
+.gemini/
+.windsurf/
+.clinerules
