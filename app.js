@@ -208,7 +208,7 @@
     if (typeof Notification === "undefined") {
       el.permit.hidden = false;
       el["permit-text"].textContent =
-        "This browser can't show notifications. Everything else works — pulses appear here in the app.";
+        "This browser can't show notifications. Everything else works — sends appear here in the app.";
       el["permit-btn"].hidden = true;
       return;
     }
@@ -221,7 +221,7 @@
       el["permit-btn"].hidden = true;
     } else {
       el["permit-text"].textContent =
-        "Pulses arrive as notifications. Turn them on so they reach you when the app isn't in front of you.";
+        "Sends arrive as notifications. Turn them on so they reach you when the app isn't in front of you.";
       el["permit-btn"].hidden = false;
     }
   }
@@ -251,14 +251,14 @@
 
     if (paused || !activeCount || !schedule.nextAt) {
       el["timer-label"].textContent =
-        paused ? "Paused" : !activeCount ? "Waiting for a phrase" : "Next pulse in";
+        paused ? "Paused" : !activeCount ? "Waiting for a phrase" : "Next send in";
       el.countdown.textContent = "--:--";
       el.rail.style.width = "0%";
       return;
     }
 
     var remainingMs = schedule.nextAt - now;
-    el["timer-label"].textContent = "Next pulse in";
+    el["timer-label"].textContent = "Next send in";
     el.countdown.textContent = formatCountdown(remainingMs);
 
     var span = state.settings.intervalMs;
@@ -323,8 +323,8 @@
       // Saying nothing here would look like a bug rather than a choice.
       el["mode-note"].textContent = current
         ? "Nothing is pinned to " + windowById(current).label.toLowerCase() +
-          ", so pulses are holding until a window opens with something in it."
-        : "Nothing is pinned to Anytime, so pulses are holding until morning.";
+          ", so sends are holding until a window opens with something in it."
+        : "Nothing is pinned to Anytime, so sends are holding until morning.";
     }
   }
 
@@ -409,7 +409,7 @@
     if (!history.length) return;
 
     var shown = history.slice(0, recentShown);
-    el["recent-tally"].textContent = history.length === 1 ? "1 pulse" : history.length + " pulses";
+    el["recent-tally"].textContent = history.length === 1 ? "1 sent" : history.length + " sent";
     el["recent-list"].innerHTML = "";
 
     shown.forEach(function (entry) {
@@ -583,10 +583,10 @@
    */
   function renderDeliveryNote() {
     var background = "serviceWorker" in navigator && "PeriodicSyncManager" in self;
-    var open = "Your phrases never leave this device. Pulses arrive on your rhythm while Refrain is open, " +
+    var open = "Your phrases never leave this device. Sends arrive on your rhythm while Refrain is open, " +
       "including in a background tab, and anything missed is delivered when you come back.";
     el["delivery-note"].textContent = open + " " + (background
-      ? "Installed to your home screen, this browser may also deliver the occasional pulse while the app is " +
+      ? "Installed to your home screen, this browser may also deliver the occasional one while the app is " +
         "closed — the browser decides how often, and it is far less often than your interval, so treat it as a bonus."
       : "While the app is closed this browser sends nothing, so keep a tab open if you want the rhythm kept.");
   }
@@ -659,9 +659,9 @@
       renderStatus();
       if (result === "granted") {
         registerBackgroundSync();
-        toast("Notifications on. Pulses will arrive from here.");
+        toast("Notifications on. Sends will arrive from here.");
       } else {
-        toast("Still off — pulses will only show inside the app.");
+        toast("Still off — sends will only show inside the app.");
       }
     });
   }
@@ -788,7 +788,7 @@
   el["quiet-on"].addEventListener("change", function () {
     var quiet = Object.assign({}, state.settings.quiet, { enabled: this.checked });
     saveSettings({ quiet: quiet }).then(function () {
-      toast(quiet.enabled ? "Overnight pulses held until " + quiet.to + "." : "Sending around the clock.");
+      toast(quiet.enabled ? "Overnight sends held until " + quiet.to + "." : "Sending around the clock.");
     });
   });
 

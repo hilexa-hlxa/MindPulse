@@ -41,21 +41,21 @@
 
   <!-- The readout: what was last dealt, and how long until the next one. -->
   <section class="readout" aria-labelledby="readout-label">
-    <h2 class="eyebrow" id="readout-label">Last pulse<span class="eyebrow__when" id="last-when"></span></h2>
+    <h2 class="eyebrow" id="readout-label">Last sent<span class="eyebrow__when" id="last-when"></span></h2>
 
     <blockquote class="phrase" id="phrase">
       <span class="phrase__placeholder">Nothing dealt yet.</span>
     </blockquote>
 
     <div class="timer">
-      <span class="timer__label" id="timer-label">Next pulse in</span>
+      <span class="timer__label" id="timer-label">Next send in</span>
       <span class="timer__clock" id="countdown" aria-describedby="timer-label">--:--</span>
     </div>
 
     <div class="rail" role="presentation"><span class="rail__fill" id="rail"></span></div>
 
     <div class="controls">
-      <button class="btn btn--solid" id="pulse-now" type="button">Pulse now</button>
+      <button class="btn btn--solid" id="pulse-now" type="button">Send now</button>
       <button class="btn" id="toggle-pause" type="button" aria-pressed="false">Pause</button>
     </div>
   </section>
@@ -97,7 +97,7 @@
       <label class="switch">
         <input type="checkbox" id="quiet-on">
         <span class="switch__track" aria-hidden="true"><span class="switch__knob"></span></span>
-        <span class="switch__label">Hold pulses overnight</span>
+        <span class="switch__label">Hold sends overnight</span>
       </label>
       <div class="quiet__times" id="quiet-times" hidden>
         <label for="quiet-from">from</label>

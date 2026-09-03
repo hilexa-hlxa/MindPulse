@@ -34,7 +34,7 @@ service worker.
 
 Drawing uniformly at random each time is the obvious approach and it is the
 wrong one. With six phrases you would see the same line twice in a row about
-one pulse in six, and any given phrase could go unseen for days.
+one send in six, and any given phrase could go unseen for days.
 
 So Refrain uses a shuffle bag. Every phrase is dealt exactly once per cycle,
 in a shuffled order; only when the bag is empty is it refilled and reshuffled.
@@ -50,17 +50,17 @@ cycle 2   1 0 4 2 5 3     reshuffled, and never 4 first
 Editing the list folds into the cycle already running: a deleted phrase drops
 out immediately, and a phrase you add now is slotted somewhere in the part of
 the cycle that has not been dealt yet, so it can turn up on the very next
-pulse instead of waiting.
+send instead of waiting.
 
 The **This cycle** row on screen is that bag, drawn — one tile per phrase, lit
 while it is still to come, dark once it has been dealt. The tiles all relight
 together when the cycle turns over.
 
-## When pulses arrive
+## When sends arrive
 
 Delivery is done by your device, not by a server.
 
-- Pulses arrive on your rhythm whenever Refrain is open, including in a
+- Sends arrive on your rhythm whenever Refrain is open, including in a
   background tab.
 - If one came due while the app was closed, it is delivered when you come
   back — once, not once for every hour you were away.
@@ -75,7 +75,7 @@ closed needs a push server, and this version deliberately has no server. So:
 Refrain keeps your rhythm while it is open, and catches you up when you
 return. Anything that arrives while it is closed is a bonus.
 
-**Hold pulses overnight** pauses delivery between the two times you choose, and
+**Hold sends overnight** pauses delivery between the two times you choose, and
 picks up again when the window lifts.
 
 ## Advanced mode
@@ -108,10 +108,10 @@ repeats — seven identical notifications in a row, in simulation. Holding until
 built on.
 
 If nothing suits the current hour, Refrain holds rather than sending
-something from the wrong window, and says so on screen. The next pulse lands as
+something from the wrong window, and says so on screen. The next send lands as
 soon as a window opens with something in it, rather than an interval later.
 
-The interval still decides how often a pulse arrives; the window only decides
+The interval still decides how often a send arrives; the window only decides
 what is eligible when one does.
 
 ## How much text a notification shows
@@ -131,7 +131,7 @@ the full phrase is set large with no limit at all.
 
 ## Around the app
 
-- **Pulse now** deals one immediately, without touching the schedule.
+- **Send now** deals one immediately, without touching the schedule.
 - **Pause** stops delivery entirely until you resume.
 - Muting a phrase keeps it in your list but takes it out of the rotation.
 - **Export** writes your phrases to a JSON file; **Import** adds back anything
@@ -139,8 +139,8 @@ the full phrase is set large with no limit at all.
   Categories travel with the phrases. Your interval and quiet hours are in the
   file too, but they are only restored into an empty app — importing into a
   library you are already using must not quietly reset how it behaves.
-- **Recently sent** lists the last pulses, newest first; ones you asked for
-  with **Pulse now** are marked apart from the ones the clock sent.
+- **Recently sent** lists the last few, newest first; ones you asked for
+  with **Send now** are marked apart from the ones the clock sent.
 
 ## Tests
 
@@ -175,7 +175,7 @@ sw.js                   offline shell, background delivery, notification taps
 ```
 
 `lib/` is shared: the page loads those three files with `<script>`, and the
-service worker pulls in the same files with `importScripts`. A pulse delivered
+service worker pulls in the same files with `importScripts`. A send delivered
 while the app is closed is therefore drawn by exactly the same code as one
 delivered while you are looking at it.
 
