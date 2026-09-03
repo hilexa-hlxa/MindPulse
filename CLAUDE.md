@@ -43,7 +43,7 @@ The payoff is that a pulse delivered while the app is closed is drawn by exactly
 
 ## Conventions that bite
 
-- **Bump `CACHE` in `sw.js`** (currently `refrain-shell-v14`) whenever a shell file changes, and add any new file to the `SHELL` array — otherwise returning visitors keep the old copy. The page reloads itself once on `controllerchange` so an update lands on the visit that fetched it.
+- **Bump `CACHE` in `sw.js`** (currently `refrain-shell-v15`) whenever a shell file changes, and add any new file to the `SHELL` array — otherwise returning visitors keep the old copy. The page reloads itself once on `controllerchange` so an update lands on the visit that fetched it.
 - **Every path is relative** (`./`, `lib/...`, `icons/...`) so the app works served from a subdirectory. Do not introduce root-absolute paths.
 - **The CSP in `index.html` is `'self'`-only** — no CDN, no external fonts, no analytics, no inline `<script>`. Inline styles are allowed. New code must be a same-origin file.
 - **`test/schedule.test.js` is where the decision path is covered.** It stands a fake in-memory `MPStore` in front of `fire`/`tick`, so anything touching storage can be tested without IndexedDB. Put new scheduling behaviour there rather than leaving it to manual checking — that gap is how two shipped defects got through.

@@ -11,7 +11,7 @@
  */
 importScripts("lib/idb.js", "lib/bag.js", "lib/pulse.js");
 
-const CACHE = "refrain-shell-v14";
+const CACHE = "refrain-shell-v15";
 const SHELL = [
   "./",
   "index.html",
