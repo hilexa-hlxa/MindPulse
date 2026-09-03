@@ -13,7 +13,7 @@ vm.createContext(ctx);
 for (const f of ["bag.js", "pulse.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "../lib", f), "utf8"), ctx);
 }
-const Pulse = ctx.MPPulse;
+const Pulse = ctx.RFPulse;
 
 let failures = 0;
 function check(name, fn) {
@@ -92,7 +92,7 @@ check("the phrase always goes in the body, never the title", () => {
   const short = "Start badly. Fix it later.";
   const out = Pulse.splitForNotification({ text: short, note: "" });
   assert(out.body === short, "the body must carry the phrase");
-  assert(out.title === "MindPulse", "the title stays a short fixed label");
+  assert(out.title === "Refrain", "the title stays a short fixed label");
 });
 
 check("a long phrase reaches the body complete and unclipped", () => {
@@ -116,7 +116,7 @@ check("nothing is ever put in the narrow title field", () => {
 
 check("a note on a phrase never reaches the narrow title field", () => {
   const out = Pulse.splitForNotification({ text: "the words that matter", note: "smuggled" });
-  assert(out.title === "MindPulse", `a note reached the title: ${out.title}`);
+  assert(out.title === "Refrain", `a note reached the title: ${out.title}`);
   assert(out.body === "the words that matter", "the phrase must still be the body");
 });
 

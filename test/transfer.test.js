@@ -11,7 +11,7 @@ const ctx = { console, Date, Math, Object, String, JSON, Array, Set, Boolean, is
 ctx.self = ctx;
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "../lib/transfer.js"), "utf8"), ctx);
-const Transfer = ctx.MPTransfer;
+const Transfer = ctx.RFTransfer;
 
 let failures = 0;
 function check(name, fn) {
@@ -42,7 +42,7 @@ const texts = (list) => list.map((p) => p.text);
 // --- parsing ------------------------------------------------------------
 
 check("reads the object form an export writes", () => {
-  const got = Transfer.parse(JSON.stringify({ app: "MindPulse", version: 1, phrases: [{ text: "one" }] }));
+  const got = Transfer.parse(JSON.stringify({ app: "Refrain", version: 1, phrases: [{ text: "one" }] }));
   assert(texts(got).join() === "one", `got ${JSON.stringify(got)}`);
 });
 
@@ -69,7 +69,7 @@ check("drops entries with no usable text instead of failing the whole file", () 
 });
 
 check("refuses a file that is not an export at all", () => {
-  const bad = ["not json at all", JSON.stringify({ app: "MindPulse" }), JSON.stringify({ phrases: "nope" }), JSON.stringify(7)];
+  const bad = ["not json at all", JSON.stringify({ app: "Refrain" }), JSON.stringify({ phrases: "nope" }), JSON.stringify(7)];
   bad.forEach((raw) => {
     let threw = false;
     try { Transfer.parse(raw); } catch (e) { threw = true; }
@@ -181,7 +181,7 @@ check("export then import into the same list adds nothing", () => {
 
 check("the export names itself so an import can recognise it", () => {
   const payload = Transfer.exportPayload({ phrases: [], settings: {} }, "2026-01-01T00:00:00.000Z");
-  assert(payload.app === "MindPulse", "export is not labelled");
+  assert(payload.app === "Refrain", "export is not labelled");
   assert(payload.exportedAt === "2026-01-01T00:00:00.000Z", "export timestamp not taken from the clock passed in");
 });
 

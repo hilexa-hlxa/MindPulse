@@ -10,7 +10,7 @@ const ctx = { console };
 ctx.self = ctx;
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "../lib/bag.js"), "utf8"), ctx);
-const Bag = ctx.MPBag;
+const Bag = ctx.RFBag;
 
 let failures = 0;
 function check(name, fn) {

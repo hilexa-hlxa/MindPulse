@@ -4,7 +4,7 @@
  *
  * These are the functions the whole app hangs off, and until this file they
  * had no coverage at all — every test was of a pure helper alongside them.
- * They need storage, so this harness stands a fake MPStore in front of them;
+ * They need storage, so this harness stands a fake RFStore in front of them;
  * nothing here touches IndexedDB, notifications, or the DOM.
  *
  * Run with: node test/schedule.test.js
@@ -19,15 +19,15 @@ vm.createContext(ctx);
 for (const f of ["bag.js", "pulse.js"]) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, "../lib", f), "utf8"), ctx);
 }
-const Pulse = ctx.MPPulse;
+const Pulse = ctx.RFPulse;
 
 /** Storage, in memory. Reads and writes the same keys the real store does. */
 function store(initial) {
   const data = Object.assign({}, initial);
-  ctx.MPStore = {
+  ctx.RFStore = {
     get: (k, fallback) => Promise.resolve(k in data && data[k] !== undefined ? data[k] : fallback),
     set: (k, v) => { data[k] = v; return Promise.resolve(); },
-    getAll: (spec) => Promise.all(Object.keys(spec).map((k) => ctx.MPStore.get(k, spec[k])))
+    getAll: (spec) => Promise.all(Object.keys(spec).map((k) => ctx.RFStore.get(k, spec[k])))
       .then((values) => {
         const out = {};
         Object.keys(spec).forEach((k, i) => { out[k] = values[i]; });

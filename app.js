@@ -1,5 +1,5 @@
 /**
- * MindPulse — the screen.
+ * Refrain — the screen.
  *
  * The rules about what to send and when live in lib/pulse.js and lib/bag.js,
  * shared with the service worker. This file only reads that state, paints it,
@@ -8,10 +8,10 @@
 (function () {
   "use strict";
 
-  var Store = self.MPStore;
-  var Bag = self.MPBag;
-  var Pulse = self.MPPulse;
-  var Transfer = self.MPTransfer;
+  var Store = self.RFStore;
+  var Bag = self.RFBag;
+  var Pulse = self.RFPulse;
+  var Transfer = self.RFTransfer;
 
   var MINUTE = 60 * 1000;
 
@@ -583,7 +583,7 @@
    */
   function renderDeliveryNote() {
     var background = "serviceWorker" in navigator && "PeriodicSyncManager" in self;
-    var open = "Your phrases never leave this device. Pulses arrive on your rhythm while MindPulse is open, " +
+    var open = "Your phrases never leave this device. Pulses arrive on your rhythm while Refrain is open, " +
       "including in a background tab, and anything missed is delivered when you come back.";
     el["delivery-note"].textContent = open + " " + (background
       ? "Installed to your home screen, this browser may also deliver the occasional pulse while the app is " +
@@ -678,7 +678,7 @@
         .query({ name: "periodic-background-sync" })
         .then(function (status) {
           if (status.state !== "granted") return;
-          return reg.periodicSync.register("mindpulse-tick", { minInterval: 15 * MINUTE });
+          return reg.periodicSync.register("refrain-tick", { minInterval: 15 * MINUTE });
         });
     }).catch(function () { /* unsupported or refused — the open app still ticks */ });
   }
@@ -688,7 +688,7 @@
     var url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
     var a = document.createElement("a");
     a.href = url;
-    a.download = "mindpulse-phrases.json";
+    a.download = "refrain-phrases.json";
     a.click();
     URL.revokeObjectURL(url);
     toast("Exported " + state.phrases.length + " phrases.");
@@ -715,7 +715,7 @@
             (restoring ? " Settings restored too." : ""));
         });
     }).catch(function () {
-      toast("That file isn't a MindPulse export.");
+      toast("That file isn't a Refrain export.");
     });
   }
 
@@ -842,7 +842,7 @@
   function reportStorageFailure() {
     el.permit.hidden = false;
     el["permit-text"].textContent =
-      "MindPulse can't reach this browser's storage, so it has nowhere to keep your phrases. " +
+      "Refrain can't reach this browser's storage, so it has nowhere to keep your phrases. " +
       "That usually means private browsing, or site data being blocked for this site.";
     el["permit-btn"].hidden = true;
     el["timer-label"].textContent = "Storage unavailable";

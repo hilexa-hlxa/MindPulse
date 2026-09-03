@@ -1,10 +1,10 @@
-# MindPulse
+# Refrain
 
-Write down the phrases you want to hear again. MindPulse deals one back to you
+Write down the phrases you want to hear again. Refrain deals one back to you
 as a notification on a rhythm you set — and never repeats a phrase until it has
 worked through every other one.
 
-![MindPulse](docs/screenshot.jpg)
+![Refrain](docs/screenshot.jpg)
 
 It is a single static page. No server, no account, no build step, no
 dependencies. Your phrases are stored in IndexedDB on your own device and are
@@ -12,7 +12,7 @@ never sent anywhere.
 
 ## Use it
 
-Live at **<https://mindpulse-app.onrender.com>** — open it on your phone and
+Live at **<https://mindpulse-app.onrender.com>** (URL not yet renamed — see note below) — open it on your phone and
 add it to your home screen to get an app icon, its own window, and
 notifications in the normal tray.
 
@@ -36,7 +36,7 @@ Drawing uniformly at random each time is the obvious approach and it is the
 wrong one. With six phrases you would see the same line twice in a row about
 one pulse in six, and any given phrase could go unseen for days.
 
-So MindPulse uses a shuffle bag. Every phrase is dealt exactly once per cycle,
+So Refrain uses a shuffle bag. Every phrase is dealt exactly once per cycle,
 in a shuffled order; only when the bag is empty is it refilled and reshuffled.
 Refilling also avoids opening a cycle with the phrase the previous one just
 closed on, which is the single place a plain reshuffle can still repeat.
@@ -60,7 +60,7 @@ together when the cycle turns over.
 
 Delivery is done by your device, not by a server.
 
-- Pulses arrive on your rhythm whenever MindPulse is open, including in a
+- Pulses arrive on your rhythm whenever Refrain is open, including in a
   background tab.
 - If one came due while the app was closed, it is delivered when you come
   back — once, not once for every hour you were away.
@@ -70,9 +70,9 @@ Delivery is done by your device, not by a server.
 Be clear-eyed about that last one. Chrome grants Periodic Background Sync
 sparingly and throttles it to roughly twelve hours between runs, whatever
 interval you chose; Safari does not implement it at all, so on an iPhone a
-closed MindPulse sends nothing. Delivering on your actual rhythm with the app
+closed Refrain sends nothing. Delivering on your actual rhythm with the app
 closed needs a push server, and this version deliberately has no server. So:
-MindPulse keeps your rhythm while it is open, and catches you up when you
+Refrain keeps your rhythm while it is open, and catches you up when you
 return. Anything that arrives while it is closed is a bonus.
 
 **Hold pulses overnight** pauses delivery between the two times you choose, and
@@ -107,7 +107,7 @@ repeats — seven identical notifications in a row, in simulation. Holding until
 06:00 costs nothing anyone wanted at 4am and keeps the promise the app is
 built on.
 
-If nothing suits the current hour, MindPulse holds rather than sending
+If nothing suits the current hour, Refrain holds rather than sending
 something from the wrong window, and says so on screen. The next pulse lands as
 soon as a window opens with something in it, rather than an interval later.
 

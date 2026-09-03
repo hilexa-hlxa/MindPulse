@@ -1,5 +1,5 @@
 /**
- * MindPulse service worker.
+ * Refrain service worker.
  *
  *  - caches the app shell so it opens with no network
  *  - delivers a pulse from a periodic background sync, when the browser
@@ -11,7 +11,7 @@
  */
 importScripts("lib/idb.js", "lib/bag.js", "lib/pulse.js");
 
-const CACHE = "mindpulse-shell-v13";
+const CACHE = "refrain-shell-v14";
 const SHELL = [
   "./",
   "index.html",
@@ -84,13 +84,13 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("periodicsync", (event) => {
-  if (event.tag === "mindpulse-tick") event.waitUntil(self.MPPulse.tick());
+  if (event.tag === "refrain-tick") event.waitUntil(self.RFPulse.tick());
 });
 
 // The page hands off to the worker when it is about to be hidden, so a
 // pulse that comes due a moment later still has an owner.
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "tick") event.waitUntil(self.MPPulse.tick());
+  if (event.data && event.data.type === "tick") event.waitUntil(self.RFPulse.tick());
 });
 
 self.addEventListener("notificationclick", (event) => {

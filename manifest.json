@@ -1,6 +1,6 @@
 {
-  "name": "MindPulse",
-  "short_name": "MindPulse",
+  "name": "Refrain",
+  "short_name": "Refrain",
   "description": "Your own phrases, dealt back to you one at a time on a rhythm you set.",
   "start_url": "./",
   "scope": "./",
