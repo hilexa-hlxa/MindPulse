@@ -12,9 +12,11 @@ never sent anywhere.
 
 ## Use it
 
-Live at **<https://mindpulse-app.onrender.com>** (URL not yet renamed — see note below) — open it on your phone and
-add it to your home screen to get an app icon, its own window, and
-notifications in the normal tray.
+Live at **<https://refrain.onrender.com>** — open it on your phone and add it
+to your home screen to get an app icon, its own window, and notifications in
+the normal tray. (The app previously ran as MindPulse at
+mindpulse-app.onrender.com; that URL still works for anyone already installed
+from it, but refrain.onrender.com is the current one.)
 
 ## Run it locally
 
